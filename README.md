@@ -91,14 +91,11 @@ portable/
 └── user-content/
     ├── README-IMPORT.md    # Import instructions
     └── exams/
-        ├── ai900/          # AI-900 exam
+        ├── example-exam/   # Example exam structure
         │   ├── dump.json
         │   ├── metadata.json
         │   └── images/
-        └── ai102/          # AI-102 exam
-            ├── dump.json
-            ├── metadata.json
-            └── images/
+        └── (your exams here)
 ```
 
 ---
@@ -137,7 +134,7 @@ portable/
 
 **Example structure:**
 ```
-user-content/exams/ai900/
+user-content/exams/my-exam/
 ├── dump.json
 ├── metadata.json
 └── images/
@@ -302,20 +299,17 @@ Questions are stored in two locations for reliability:
 ### Storage Keys
 
 ```javascript
-// Questions
-localStorage['custom_ai900_questions']
-localStorage['custom_ai102_questions']
+// Questions (per exam)
+localStorage['custom_<examId>_questions']  // e.g., custom_myexam_questions
 
-// Metadata
-localStorage['exam_metadata_ai900']
-localStorage['exam_metadata_ai102']
+// Metadata (per exam)
+localStorage['exam_metadata_<examId>']     // e.g., exam_metadata_myexam
 
 // Activation config
 localStorage['exam_activation_config']
 
 // Progress tracking (per exam)
-localStorage['ai900_progress']
-localStorage['ai102_progress']
+localStorage['<examId>_progress']          // e.g., myexam_progress
 
 // Theme preference
 localStorage['theme']
@@ -457,9 +451,9 @@ localStorage['theme']
 
 ```json
 {
-  "id": "ai900",
-  "name": "AI-900",
-  "fullName": "Azure AI Fundamentals",
+  "id": "myexam",
+  "name": "My Exam",
+  "fullName": "My Custom Exam",
   "duration": 45,
   "questionCount": 45,
   "totalQuestions": 137,
@@ -506,7 +500,7 @@ exam-pack/
     └── (image files)
 
 # Package as ZIP
-zip -r ai900-exam-pack.zip dump.json metadata.json images/
+zip -r my-exam-pack.zip dump.json metadata.json images/
 ```
 
 **See [HOW-TO-DISTRIBUTE.md](./HOW-TO-DISTRIBUTE.md) for detailed distribution guide.**

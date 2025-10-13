@@ -62,15 +62,15 @@ python server.py
 | File | Purpose | URL |
 |------|---------|-----|
 | `index.html` | Homepage (exam selection, progress dashboard) | `/` |
-| `exam.html` | Exam simulator | `/exam.html?exam=ai900` |
+| `exam.html` | Exam simulator | `/exam.html?exam=<examId>` |
 | `editor.html` | Question editor | `/editor.html` |
 
 ### Example Usage
 
 ```bash
-# Direct exam access
-http://localhost:8000/exam.html?exam=ai900
-http://localhost:8000/exam.html?exam=ai102
+# Direct exam access (replace <examId> with your exam code)
+http://localhost:8000/exam.html?exam=myexam
+http://localhost:8000/exam.html?exam=certification
 
 # Editor
 http://localhost:8000/editor.html
@@ -86,11 +86,11 @@ Place exam folders in `user-content/exams/`:
 
 ```
 user-content/exams/
-├── ai900/
+├── example-exam/
 │   ├── dump.json         ← Questions
 │   ├── metadata.json     ← Exam info (optional)
 │   └── images/           ← Images (optional)
-└── ai102/
+└── my-exam/
     └── (same structure)
 ```
 
@@ -238,9 +238,9 @@ The simulator now includes comprehensive dark/light mode:
 
 ```json
 {
-  "id": "ai900",
-  "name": "AI-900",
-  "fullName": "Azure AI Fundamentals",
+  "id": "myexam",
+  "name": "My Exam",
+  "fullName": "My Custom Exam",
   "duration": 45,
   "questionCount": 45,
   "totalQuestions": 137,
@@ -298,17 +298,14 @@ If no metadata file, simulator auto-generates basic settings.
 Everything stored in browser localStorage:
 
 ```javascript
-// Questions
-localStorage['custom_ai900_questions']
-localStorage['custom_ai102_questions']
+// Questions (per exam)
+localStorage['custom_<examId>_questions']  // e.g., custom_myexam_questions
 
-// Metadata
-localStorage['exam_metadata_ai900']
-localStorage['exam_metadata_ai102']
+// Metadata (per exam)
+localStorage['exam_metadata_<examId>']     // e.g., exam_metadata_myexam
 
 // Progress (per exam)
-localStorage['ai900_progress']
-localStorage['ai102_progress']
+localStorage['<examId>_progress']          // e.g., myexam_progress
 
 // Settings
 localStorage['exam_activation_config']

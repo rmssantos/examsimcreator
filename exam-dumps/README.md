@@ -1,9 +1,45 @@
-This folder is for local JSON dumps per exam code.
+# Custom Exam Dumps Folder
 
-Usage:
-- Place a file named <code>.json here, e.g. ai102.json, ai900.json, az204.json.
-- In the editor, set the exam selector to Custom and use the code to Load (e.g., ai102).
-- The simulator does not automatically load custom dumps; saving in the editor writes to localStorage under key `custom_<code>_questions`.
+This folder is for storing custom exam question files that can be loaded into the editor.
 
-Notes:
-- For AI-102 built-in, we still load from `ai102-extractor/out/ai102_dump.json`. You can override via localStorage or by loading `exam-dumps/ai102.json` in the editor and saving.
+## Usage
+
+1. Place a JSON file named `<exam-code>.json` in this folder
+   - Examples: `myexam.json`, `certification.json`, `practice.json`
+
+2. In the editor:
+   - Set the exam selector to **Custom**
+   - Enter your exam code (e.g., `myexam`)
+   - Click **Load** to import the questions from `exam-dumps/myexam.json`
+
+3. The simulator stores questions in browser localStorage under the key:
+   ```
+   custom_<exam-code>_questions
+   ```
+
+## File Format
+
+Your JSON file should contain an array of question objects:
+
+```json
+[
+  {
+    "id": 1,
+    "module": "MODULE_NAME",
+    "question": "Question text?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct": 0,
+    "explanation": "Explanation text",
+    "question_type": "STANDARD"
+  }
+]
+```
+
+See [docs/Data-and-Dumps.md](../docs/Data-and-Dumps.md) for complete schema documentation.
+
+## Notes
+
+- **Custom exams are NOT automatically loaded** - you must explicitly load them via the editor
+- After loading and editing in the editor, click **Save** to persist to localStorage
+- Questions persist in your browser even after closing the tab
+- To share your custom exam, export it as JSON from the editor
