@@ -130,7 +130,7 @@ Dropping a `.zip` exam pack works too—the simulator reads `dump.json`/`metadat
 1. **Select exam** - Click exam card on homepage
 2. **Start** - Click "Start Exam" button (or exam card opens exam.html directly)
 3. **Answer questions** - Select your answers
-4. **Navigate** - Use Next/Previous or keyboard shortcuts
+4. **Navigate** - Use Next/Previous buttons
 5. **Finish** - Complete all questions or click "Finish Exam"
 
 ### During Exam
@@ -142,17 +142,6 @@ Dropping a `.zip` exam pack works too—the simulator reads `dump.json`/`metadat
 - **Show Answer** - Reveal correct answer + detailed explanation
 - **Navigation** - Previous/Next buttons (Previous disabled on Q1)
 - **Compact UI** - Optimized spacing for comfortable reading
-
-### Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `A-Z` / `1-9` | Select answer |
-| `←` `→` | Previous/Next question |
-| `Enter` | Next question |
-| `M` | Mark for review |
-| `S` | Show answer |
-| `Esc` | Close feedback |
 
 ---
 

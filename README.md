@@ -231,7 +231,7 @@ python generate-exam-data-js.py
 - **Mark for Review** - Flag difficult questions
 - **Show Answer** - Reveal correct answers with explanations
 - **Image Support** - Display images in questions and explanations
-- **Navigation** - Previous/Next buttons + keyboard shortcuts
+- **Navigation** - Previous/Next buttons for easy navigation
 - **Compact UI** - Optimized spacing for better readability
 - **Question Type Indicators** - Visual badges for special question types
 
@@ -276,22 +276,6 @@ The simulator includes a comprehensive dark/light mode system:
 - Enhanced visibility for Interactive Features cards
 - Proper contrast for Progress cards
 - Consistent theming across all components
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-### During Exam
-- `←` / `→` - Previous/Next question
-- `Enter` - Next question
-- `A-Z` / `1-9` - Select answer option
-- `M` - Mark for review
-- `S` - Show answer
-- `Esc` - Close feedback panel
-
-### Navigation
-- `Tab` - Cycle through interactive elements
-- `Space` - Toggle checkboxes
 
 ---
 
@@ -670,7 +654,6 @@ For issues, questions, or feature requests:
 - Full dark/light mode across all pages
 - Compact UI with enhanced readability
 - Detailed question review in results
-- Keyboard shortcuts
 - 5+ question types
 
 ### Version 2.1 - Planned 🔜
