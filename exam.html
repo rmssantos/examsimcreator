@@ -22,7 +22,7 @@
       <div class="exam-header">
         <div class="exam-info-header">
           <span id="current-exam-badge" class="exam-badge">Exam</span>
-          <button id="switch-exam" class="btn btn-outline-sm" onclick="window.location.href='index.html'">
+          <button id="switch-exam" class="btn btn-outline-sm" onclick="closeExamTab()">
             <i class="fas fa-door-open"></i> Close
           </button>
         </div>
@@ -90,57 +90,103 @@
         </button>
       </div>
       <div class="results-container">
-        <div class="results-hero">
-          <div class="results-icon">
-            <div id="result-status-icon" class="status-icon">
-              <i class="fas fa-check-circle"></i>
-            </div>
-          </div>
-          <div id="result-status" class="result-status">PASSED</div>
-          <div class="main-score">
-            <span id="percentage-score" class="score-percentage">0%</span>
-            <span class="score-label">Final Score</span>
-          </div>
-          <div id="exam-name-result" class="exam-name-badge">Exam</div>
-        </div>
-        <div class="performance-dashboard">
-          <h3 class="dashboard-title"><i class="fas fa-chart-line"></i> Performance Overview</h3>
-          <div class="stats-grid-modern">
-            <div class="stat-card-modern correct">
-              <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-              <div class="stat-content">
-                <span id="correct-count" class="stat-number">0</span>
-                <span class="stat-label">Correct Answers</span>
-                <div class="stat-bar"><div id="correct-progress" class="stat-progress correct-progress"></div></div>
+        <div class="results-shell">
+          <div class="results-layout">
+            <section class="results-summary-card" id="resultsSummaryCard">
+              <div class="summary-top-row">
+                <span id="result-status" class="result-status result-status-chip">PASSED</span>
+                <span id="exam-name-result" class="exam-name-pill">Exam</span>
               </div>
-            </div>
-            <div class="stat-card-modern incorrect">
-              <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-              <div class="stat-content">
-                <span id="incorrect-count" class="stat-number">0</span>
-                <span class="stat-label">Incorrect Answers</span>
-                <div class="stat-bar"><div id="incorrect-progress" class="stat-progress incorrect-progress"></div></div>
+              <div class="summary-visuals">
+                <div class="score-ring" id="scoreRing" style="--score-deg: 0deg;">
+                  <div class="score-ring-inner">
+                    <span id="percentage-score" class="score-percentage">0%</span>
+                    <span class="score-label">Final Score</span>
+                  </div>
+                </div>
+                <div class="status-icon" id="result-status-icon">
+                  <i class="fas fa-check-circle"></i>
+                </div>
               </div>
-            </div>
-            <div class="stat-card-modern time">
-              <div class="stat-icon"><i class="fas fa-stopwatch"></i></div>
-              <div class="stat-content">
-                <span id="time-spent" class="stat-number">0min</span>
-                <span class="stat-label">Time Taken</span>
+              <div class="summary-metrics">
+                <div class="summary-metric">
+                  <span class="metric-label">Correct</span>
+                  <span id="correct-count" class="metric-value">0</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-label">Incorrect</span>
+                  <span id="incorrect-count" class="metric-value">0</span>
+                </div>
+                <div class="summary-metric">
+                  <span class="metric-label">Time</span>
+                  <span id="time-spent" class="metric-value">0min</span>
+                </div>
               </div>
-            </div>
+              <div class="summary-divider"></div>
+              <div class="summary-meta">
+                <div>
+                  <span class="meta-label">Questions answered</span>
+                  <strong id="total-questions-result">0</strong>
+                </div>
+                <div>
+                  <span class="meta-label">Passing threshold</span>
+                  <strong id="pass-score-target">70%</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="results-insights-card">
+              <div class="insights-header">
+                <h3><i class="fas fa-chart-line"></i> Performance Insights</h3>
+                <p>See how this session compares to the target score.</p>
+              </div>
+              <div class="insight-progress">
+                <div class="insight-label-row">
+                  <span>Accuracy</span>
+                  <span id="accuracy-percentage" class="insight-value">0%</span>
+                </div>
+                <div class="insight-bar">
+                  <div id="correct-progress" class="stat-progress insight-correct"></div>
+                </div>
+              </div>
+              <div class="insight-progress">
+                <div class="insight-label-row">
+                  <span>Missed</span>
+                  <span id="missed-percentage" class="insight-value">0%</span>
+                </div>
+                <div class="insight-bar">
+                  <div id="incorrect-progress" class="stat-progress insight-incorrect"></div>
+                </div>
+              </div>
+              <ul class="insights-list">
+                <li>
+                  <span>Score vs pass mark</span>
+                  <strong id="score-vs-pass">0 / 0%</strong>
+                </li>
+                <li>
+                  <span>Time spent</span>
+                  <strong id="time-spent-secondary">0min</strong>
+                </li>
+              </ul>
+              <div class="insight-hint">
+                <i class="fas fa-info-circle"></i>
+                <span>Use Retake Exam to immediately replay with updated question order.</span>
+              </div>
+            </section>
           </div>
-        </div>
-        <div id="detailed-review" class="detailed-review"></div>
-        <div class="results-actions-modern">
-          <button id="restart-exam" class="action-btn restart-btn">
-            <div class="btn-icon"><i class="fas fa-redo-alt"></i></div>
-            <div class="btn-content"><span class="btn-title">Retake Exam</span></div>
-          </button>
-          <button id="back-to-home" class="action-btn home-btn" onclick="window.location.href='index.html'">
-            <div class="btn-icon"><i class="fas fa-home"></i></div>
-            <div class="btn-content"><span class="btn-title">Back to Home</span></div>
-          </button>
+
+          <section id="detailed-review" class="detailed-review"></section>
+
+          <div class="results-actions-modern">
+            <button id="restart-exam" class="action-btn restart-btn">
+              <div class="btn-icon"><i class="fas fa-redo-alt"></i></div>
+              <div class="btn-content"><span class="btn-title">Retake Exam</span></div>
+            </button>
+            <button id="back-to-home" class="action-btn home-btn" onclick="closeExamTab()">
+              <div class="btn-icon"><i class="fas fa-home"></i></div>
+              <div class="btn-content"><span class="btn-title">Back to Home</span></div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -151,8 +197,24 @@
   <!-- Use unified exam loader -->
   <script src="exam-loader.js"></script>
 
+  <!-- Image Storage (IndexedDB) -->
+  <script src="image-storage.js"></script>
+  
   <script src="script-multi-exam.js"></script>
   <script>
+    // Close exam tab or navigate to homepage
+    function closeExamTab() {
+      // Try to close the tab (works if opened via window.open)
+      window.close();
+      
+      // If close() didn't work (tab still open), redirect after small delay
+      setTimeout(() => {
+        if (!window.closed) {
+          window.location.href = 'index.html';
+        }
+      }, 100);
+    }
+
     // Dynamic exam loading from user-content
     document.addEventListener('DOMContentLoaded', async function() {
       // Wait for exams to load via exam-loader.js
@@ -168,6 +230,24 @@
       // Set image loader to current exam
       if (window.imageLoader) {
         window.imageLoader.setCurrentExam(examId);
+      }
+
+      // Check if images are available in IndexedDB
+      if (window.imageStorage) {
+        try {
+          const imageCount = await window.imageStorage.getExamImageCount(examId);
+          if (imageCount > 0) {
+            console.log(`✅ ${imageCount} images available in IndexedDB for ${examId}`);
+          } else {
+            console.warn(`⚠️ No images found for exam "${examId}". Please re-import the ZIP file.`);
+            const warningBanner = document.createElement('div');
+            warningBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff9800;color:white;padding:10px 20px;text-align:center;z-index:10000;font-weight:bold;';
+            warningBanner.innerHTML = '⚠️ Images not loaded! Please go back to homepage and re-import the exam ZIP file.';
+            document.body.appendChild(warningBanner);
+          }
+        } catch (e) {
+          console.warn('Could not check image count:', e);
+        }
       }
 
       // Check if exam exists in window.userExams (loaded by exam-loader.js)

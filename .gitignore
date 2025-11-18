@@ -30,11 +30,16 @@ user-content/exams/*/
 user-content/exams/*
 !user-content/exams/README.md
 
-# Dumps folder - NEVER push exam dumps online
-.dumps/
-downloads/official-dumps/
-downloads/official-images/
-downloads/*.json
+# Private exam backups/zips (keep local only)
+user-content/ai900*/
+user-content/ai102*/
+user-content/ai900*.zip
+user-content/ai102*.zip
+
+# Exam media lives locally only
+images/*
+!images/.gitkeep
+!images/README.md
 
 # Development
 node_modules/

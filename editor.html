@@ -398,69 +398,13 @@
   <input id="fileInput" type="file" accept="application/json" style="display:none;" />
 
   <script src="exam-manager.js"></script>
-
-  <!-- Load user exams -->
-  <script>
-    // Initialize user exams container
-    window.userExams = window.userExams || {};
-    window.examsLoadedPromise = null;
-
-    // Dynamically load all exam-data.js files
-    window.examsLoadedPromise = (async function loadExams() {
-      const knownExams = ['ai900', 'ai102', 'ai103'];
-
-      // Try to dynamically discover exams
-      try {
-        const response = await fetch('user-content/exams/');
-        if (response.ok) {
-          const text = await response.text();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(text, 'text/html');
-          const links = doc.querySelectorAll('a');
-          const examDirs = Array.from(links)
-            .map(a => a.href.split('/').filter(x => x).pop())
-            .filter(name => name && name !== '..' && !name.includes('.'));
-
-          if (examDirs.length > 0) {
-            examDirs.forEach(examId => {
-              if (!knownExams.includes(examId)) {
-                knownExams.push(examId);
-              }
-            });
-          }
-        }
-      } catch (e) {
-        console.log('Auto-discovery not available, using known exams list');
-      }
-
-      // Load each exam's exam-data.js and wait for them
-      const loadPromises = knownExams.map(examId => {
-        return new Promise((resolve) => {
-          const script = document.createElement('script');
-          script.src = `user-content/exams/${examId}/exam-data.js`;
-          script.onload = () => {
-            console.log(`✓ Loaded ${examId}`);
-            resolve();
-          };
-          script.onerror = () => {
-            console.log(`✗ ${examId} not installed or exam-data.js not found`);
-            resolve();
-          };
-          document.head.appendChild(script);
-        });
-      });
-
-      await Promise.all(loadPromises);
-      console.log('All exams loaded:', Object.keys(window.userExams));
-    })();
-  </script>
+  <script src="exam-loader.js"></script>
   <script>
     // Initialize dynamic exam list in editor
     async function initializeEditorExamList() {
-      // Wait for exam scripts to load first
-      if (window.examsLoadedPromise) {
-        await window.examsLoadedPromise;
-      }
+      // Wait for exam data (falls back immediately if loader unavailable)
+      const loadPromise = window.examsLoadedPromise || Promise.resolve();
+      await loadPromise;
 
       const examSelect = document.getElementById('examSelect');
 
@@ -476,12 +420,17 @@
           return;
         }
 
+        let selectedExamId = null;
+
         // Add available exams
         exams.forEach((examData, examId) => {
           const option = document.createElement('option');
           option.value = examId;
           option.textContent = `${examData.metadata.name} (${examData.questions.length} questions)`;
           examSelect.appendChild(option);
+          if (!selectedExamId) {
+            selectedExamId = examId;
+          }
         });
 
         // Add custom option
@@ -490,10 +439,14 @@
         customOption.textContent = 'Custom (loaded)';
         examSelect.appendChild(customOption);
 
-        // Select first exam by default
-        if (examSelect.options.length > 1) {
-          examSelect.selectedIndex = 0;
+        // Select first detected exam by default
+        if (selectedExamId) {
+          examSelect.value = selectedExamId;
         }
+
+        document.dispatchEvent(new CustomEvent('editorExamListReady', {
+          detail: { defaultExamId: selectedExamId }
+        }));
 
       } catch (error) {
         console.error('Failed to load exams in editor:', error);

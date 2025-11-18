@@ -1,19 +1,20 @@
-# Exam Simulator
+# Exam Simulator (Portable)
 
 > **A universal, offline-capable exam practice platform with dynamic question types, visual editor, and comprehensive progress tracking.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/rmssantos/examsimcreator)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/exam-simulator)
 
 ---
 
 ## 🎯 Overview
 
-The **Exam Simulator** is a self-contained, browser-based exam practice platform designed for certification preparation. It supports multiple question types (single/multiple choice, drag & drop, sequences, Y/N matrices), includes a visual question editor, and works completely offline with full dark mode support.
+The **Exam Simulator** is a self-contained, browser-based exam practice platform designed for certification preparation. Teams can unzip it anywhere, create their own exams with the built-in editor, share/import packs, and practice together—no installation, licenses, or external services required. It supports multiple question types (single/multiple choice, drag & drop, sequences, Y/N matrices), includes a visual question editor, and works completely offline with full dark mode support.
 
 ### Key Features
 
 - ✅ **100% Offline** - Works without internet (local server or file:// mode)
+- ✅ **Portable Zip** - No installers; unzip anywhere and double-click `index.html`
 - ✅ **Dynamic Exam Detection** - Automatically discovers exams in `user-content/exams/`
 - ✅ **Visual Question Editor** - Create and edit questions with a built-in editor
 - ✅ **5+ Question Types** - Standard, multi-select, drag & drop, sequences, Y/N matrices
@@ -24,9 +25,33 @@ The **Exam Simulator** is a self-contained, browser-based exam practice platform
 - ✅ **Compact Modern UI** - Optimized spacing and enhanced readability
 - ✅ **Global Progress Dashboard** - View stats across all exams
 
+### ⚠️ Content Safety & Licensing
+
+- **No official dumps are stored in this repo.** The portable folder is safe to make public because it only ships the simulator code, docs, and empty drop-zones.
+- **AI-900/AI-102 (and any other licensed content) must live in a private location** (private Git repo, encrypted drive, SharePoint, etc.). Drag/drop or copy them locally when you study.
+- **Recommended workflow:**
+  1. Keep this sanitized repo public for the simulator.
+  2. Maintain a private repo or storage bucket that contains your proprietary exam packs (e.g., `ai900-exam-pack.zip`).
+  3. When teammates need the full kit, give them (a) the public simulator zip and (b) secure links to the private exam packs.
+- `.gitignore` already blocks `user-content/ai900*`, `user-content/ai102*`, and all `images/` assets so sensitive files can’t be re-committed by accident.
+
 ---
 
 ## 🚀 Quick Start
+
+![Creating an Exam](creating_exam.gif)
+
+### Option 0: Portable Zip (Zero Install)
+
+The simulator ships as a self-contained folder. Share it as a `.zip`, unzip anywhere (USB drive, OneDrive, Downloads), then double-click `index.html` to start practicing—no runtimes, package managers, or admin rights required.
+
+**Steps:**
+1. Download or clone the repo, or grab the latest GitHub Release ZIP.
+2. Extract the `portable/` directory (keep its structure intact).
+3. Double-click `portable/index.html` for the homepage, `exam.html` for a specific exam, or `editor.html` to create content.
+4. Use drag & drop to import exams, or copy folders into `user-content/exams/`.
+
+> Tip: You can still launch `python server.py` later if you want auto-detection + perfect image paths, but it’s optional.
 
 ### Option 1: With Local Server (Recommended)
 
@@ -88,14 +113,15 @@ portable/
 ├── multi-exam-styles.css   # Multi-exam support
 ├── generate-exam-data-js.py # Generate exam-data.js from dumps
 ├── docs/                   # Documentation folder
+├── images/
+│   ├── README.md           # Explains local-only media drop zone
+│   └── .gitkeep            # Keeps folder in git without assets
 └── user-content/
-    ├── README-IMPORT.md    # Import instructions
-    └── exams/
-        ├── example-exam/   # Example exam structure
-        │   ├── dump.json
-        │   ├── metadata.json
-        │   └── images/
-        └── (your exams here)
+  ├── README-IMPORT.md    # Import instructions
+  └── exams/
+    ├── .gitkeep        # Keeps folder tracked (empty by default)
+    ├── ai300.json      # Tiny sample exam (non-official)
+    └── high5_dump.json # Example practice data placeholder
 ```
 
 ---
@@ -122,6 +148,8 @@ portable/
 
 ## 📦 Importing Exams
 
+![Importing and Editing Exams](importing_and_editing.gif)
+
 ### Method 1: Automatic Detection (Server Mode Only)
 
 1. Place exam folders in `user-content/exams/`
@@ -132,14 +160,14 @@ portable/
 3. Start the server
 4. Exams appear automatically on the homepage
 
-**Example structure:**
+**Example structure (imported from your private exam pack):**
 ```
-user-content/exams/my-exam/
+user-content/exams/<exam-id>/
 ├── dump.json
 ├── metadata.json
 └── images/
-    ├── question1.jpg
-    └── diagram2.png
+  ├── question1.jpg
+  └── diagram2.png
 ```
 
 ---
@@ -150,6 +178,8 @@ user-content/exams/my-exam/
 2. Drag a `dump.json` file anywhere on the homepage
 3. The exam is imported and stored in `localStorage`
 4. A card appears immediately (may show generic metadata)
+
+You can also drop `.zip` exam packs. The simulator will read `dump.json`/`metadata.json` automatically and remind you to copy any bundled images into `user-content/exams/<examId>/images/`.
 
 ---
 
@@ -299,21 +329,21 @@ Questions are stored in two locations for reliability:
 ### Storage Keys
 
 ```javascript
-// Questions (per exam)
-localStorage['custom_<examId>_questions']  // e.g., custom_myexam_questions
+const examId = 'your-exam-id';
 
-// Metadata (per exam)
-localStorage['exam_metadata_<examId>']     // e.g., exam_metadata_myexam
-
-// Activation config
-localStorage['exam_activation_config']
+// Questions & metadata
+localStorage[`custom_${examId}_questions`];
+localStorage[`exam_metadata_${examId}`];
 
 // Progress tracking (per exam)
-localStorage['<examId>_progress']          // e.g., myexam_progress
+localStorage[`${examId}_progress`];
 
-// Theme preference
-localStorage['theme']
+// Global settings
+localStorage['exam_activation_config'];
+localStorage['theme'];
 ```
+
+> Example IDs such as `ai900` or `ai102` are commonly used internally but the actual dumps are **not** shipped in this repo—store them privately and import them at runtime.
 
 ---
 
@@ -346,6 +376,8 @@ localStorage['theme']
 2. Verify image paths are relative to `images/` folder
 3. Check filenames match exactly (case-sensitive)
 4. Ensure images exist in `user-content/exams/{exam-id}/images/`
+
+> The public repo keeps `images/` empty on purpose. Copy your private exam media into `user-content/exams/<exam-id>/images/` (or host them elsewhere) when running the simulator locally.
 
 ---
 
@@ -451,9 +483,9 @@ localStorage['theme']
 
 ```json
 {
-  "id": "myexam",
-  "name": "My Exam",
-  "fullName": "My Custom Exam",
+  "id": "ai900",
+  "name": "AI-900",
+  "fullName": "Azure AI Fundamentals",
   "duration": 45,
   "questionCount": 45,
   "totalQuestions": 137,
@@ -500,10 +532,23 @@ exam-pack/
     └── (image files)
 
 # Package as ZIP
-zip -r my-exam-pack.zip dump.json metadata.json images/
+zip -r ai900-exam-pack.zip dump.json metadata.json images/
 ```
 
 **See [HOW-TO-DISTRIBUTE.md](./HOW-TO-DISTRIBUTE.md) for detailed distribution guide.**
+
+### Share with Your Team (GitHub-Ready)
+
+1. **Push or fork this repo** to your organization’s GitHub project (it’s already portable).
+2. **Create a Release ZIP** (GitHub → Releases → “Draft new release” → Upload `portable.zip`).
+3. **Tell teammates to download & unzip** the release, then double-click `index.html`—no installs needed.
+4. **Provide exam packs** as separate ZIPs or folders they can drag/drop or copy into `user-content/exams/`.
+5. **Encourage creators** to use `editor.html` to build new exams, export them, and commit/attach them for the rest of the team.
+
+Add a short `README-team.md` (or reuse this README) in your repo describing:
+- Where to download the latest portable zip
+- How to import/share exams internally
+- Who owns official exam packs vs. personal practice sets
 
 ---
 

@@ -1,5 +1,7 @@
 # Data Formats and Question Schema
 
+> ℹ️ **Examples only:** This document references IDs like `ai900`/`ai102` purely as placeholders. The public repository does **not** include official dumps—store them privately and import them locally.
+
 ## Question Data Structure
 
 All exam questions follow a standardized JSON schema:
@@ -146,7 +148,7 @@ Click on specific areas of an image.
 All image filenames are relative to the exam's `images/` folder:
 
 ```
-user-content/exams/ai900/
+user-content/exams/<exam-id>/
 ├── dump.json
 ├── metadata.json
 └── images/
@@ -185,20 +187,17 @@ In `dump.json`:
 The simulator uses browser localStorage for persistence:
 
 ```javascript
-// Questions
-localStorage['custom_ai900_questions']  // JSON array of questions
-localStorage['custom_ai102_questions']
+const examId = 'your-exam-id';
 
-// Metadata
-localStorage['exam_metadata_ai900']     // Exam configuration
-localStorage['exam_metadata_ai102']
+// Questions & metadata
+localStorage[`custom_${examId}_questions`];
+localStorage[`exam_metadata_${examId}`];
 
 // Progress
-localStorage['ai900_progress']          // User's exam history
-localStorage['ai102_progress']
+localStorage[`${examId}_progress`];
 
 // Settings
-localStorage['exam_activation_config']  // Visible exams
+localStorage['exam_activation_config'];
 localStorage['theme']                   // dark or light
 ```
 

@@ -5,6 +5,8 @@
 ### TL;DR
 **ALL user data is stored ONLY in the user's browser `localStorage`. Nothing is sent to the server. Each user's data is completely isolated and private.**
 
+> ⚠️ **Content policy:** The public repo never ships proprietary exam dumps (AI-900, AI-102, etc.). Keep those packs in private storage and only copy them locally when you need them.
+
 ---
 
 ## How It Works
@@ -99,11 +101,11 @@ localStorage['theme']                   // Dark/light mode preference
 
 ### Server-Side (Optional Pre-Installed Exams)
 
-The ONLY way to share exams with all users is to **pre-install** them on the server:
+The ONLY way to share exams with all users is to **pre-install** them on the server (inside a private, access-controlled deployment):
 
 ```
 user-content/exams/
-├── ai900/
+├── ai900/              ← Example private exam ID
 │   ├── dump.json         ← This will be visible to ALL users
 │   ├── metadata.json
 │   └── images/

@@ -42,6 +42,23 @@ class ImageLoader {
     }
 
     async loadLocalImage(filename) {
+        // Try IndexedDB first (persists between tabs)
+        if (window.imageStorage && this.currentExam) {
+            try {
+                const dataUrl = await window.imageStorage.getImage(this.currentExam, filename);
+                if (dataUrl) {
+                    console.log(`✓ Loaded ${filename} from IndexedDB`);
+                    return dataUrl;
+                }
+            } catch (err) {
+                console.warn(`⚠️ Failed to load ${filename} from IndexedDB:`, err);
+            }
+        }
+        
+        // If not found, images need to be imported
+        console.warn(`⚠️ Image "${filename}" not found. Please re-import the exam ZIP file.`);
+
+        // Fallback to file system loading
         return new Promise((resolve, reject) => {
             const img = new Image();
 
@@ -95,16 +112,32 @@ class ImageLoader {
 function renderQuestionImage(imageFilename, altText = '', className = 'question-image') {
     if (!imageFilename) return '';
 
-    // Determine image path based on current exam
-    let imagePath = `./images/${imageFilename}`; // Fallback
-    if (window.imageLoader && window.imageLoader.currentExam) {
-        imagePath = `./user-content/exams/${window.imageLoader.currentExam}/images/${imageFilename}`;
-    }
+    // Create a placeholder that will be replaced with actual image
+    const placeholderId = `img-placeholder-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Load image asynchronously
+    setTimeout(async () => {
+        const placeholder = document.getElementById(placeholderId);
+        if (!placeholder) return;
+        
+        try {
+            const imagePath = await window.imageLoader.loadImage(imageFilename);
+            
+            // Create and insert the actual image
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.alt = altText;
+            img.className = className;
+            img.style.cssText = 'max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; margin: 15px auto; display: block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+            
+            placeholder.replaceWith(img);
+        } catch (error) {
+            console.warn(`Failed to load image: ${imageFilename}`, error);
+            placeholder.innerHTML = `<div class="image-error" style="color: #dc3545; text-align: center; padding: 20px; font-size: 14px;"><i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px;"></i><div>Imagem não disponível: ${imageFilename}</div></div>`;
+        }
+    }, 0);
 
-    // Fallback path for error handling
-    const fallbackPath = `./images/${imageFilename}`;
-
-    return `<img src="${imagePath}" alt="${altText}" class="${className}" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; margin: 15px auto; display: block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onerror="if(this.src !== '${fallbackPath}') { this.src = '${fallbackPath}'; } else { this.style.display='none'; this.insertAdjacentHTML('afterend', '<div class=\\'image-error\\' style=\\'color: #dc3545; text-align: center; padding: 20px; font-size: 14px;\\'><i class=\\'fas fa-exclamation-triangle\\' style=\\'font-size: 20px; margin-bottom: 8px;\\'></i><div>Imagem não disponível: ${imageFilename}</div></div>'); }">`;
+    return `<div id="${placeholderId}" class="image-placeholder"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><div>Carregando imagem...</div></div></div>`;
 }
 
 // Função para processar texto da questão e renderizar imagens
@@ -206,8 +239,32 @@ async function initializeImageSystem() {
     return Promise.resolve();
 }
 
+// Utility function to clear images for a specific exam
+async function clearExamImages(examId) {
+    if (window.imageStorage) {
+        const count = await window.imageStorage.deleteExamImages(examId);
+        if (window.imageLoader) {
+            window.imageLoader.cache.clear(); // Clear memory cache
+        }
+        return count;
+    }
+    return 0;
+}
+
+// Utility function to get storage stats
+async function getImageStorageStats() {
+    if (window.imageStorage) {
+        const stats = await window.imageStorage.getStorageStats();
+        console.log('📊 Image Storage Stats:', stats);
+        return stats;
+    }
+    return { totalImages: 0, totalSizeMB: '0.00', exams: {} };
+}
+
 // Exportar funções
 window.ImageLoader = ImageLoader;
 window.renderQuestionImage = renderQuestionImage;
 window.processQuestionContent = processQuestionContent;
 window.initializeImageSystem = initializeImageSystem;
+window.clearExamImages = clearExamImages;
+window.getImageStorageStats = getImageStorageStats;

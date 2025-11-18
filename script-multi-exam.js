@@ -596,23 +596,6 @@ class MultiExamSimulator {
                 const imageWrapper = document.createElement('div');
                 imageWrapper.className = 'question-image-wrapper';
                 
-                const img = document.createElement('img');
-                img.className = 'question-image';
-                // Use local images base path; filename should be relative to images/ (e.g., ai102/...)
-                img.src = `./images/${imageInfo.filename}`;
-                img.alt = `Question ${this.currentQuestionIndex + 1} - Image ${index + 1}`;
-                img.loading = 'lazy';
-                
-                // Add error handling
-                img.onerror = () => {
-                    imageWrapper.innerHTML = `
-                        <div class="image-error">
-                            <i class="fas fa-image"></i>
-                            <small>Image not available: ${imageInfo.filename}</small>
-                        </div>
-                    `;
-                };
-                
                 // Add loading placeholder
                 const placeholder = document.createElement('div');
                 placeholder.className = 'image-placeholder';
@@ -624,14 +607,59 @@ class MultiExamSimulator {
                 `;
                 
                 imageWrapper.appendChild(placeholder);
-                imageWrapper.appendChild(img);
-                
-                // Remove placeholder when image loads
-                img.onload = () => {
-                    placeholder.remove();
-                };
-                
                 container.appendChild(imageWrapper);
+                
+                // Load image from IndexedDB or filesystem (non-blocking)
+                (async () => {
+                    try {
+                        // Extract just the filename (last part of path)
+                        // Handles: 'images/ai900/file.jpg' -> 'file.jpg'
+                        let filename = imageInfo.filename;
+                        if (filename.includes('/')) {
+                            filename = filename.split('/').pop();
+                        } else if (filename.includes('\\')) {
+                            filename = filename.split('\\').pop();
+                        }
+                        
+                        // Use imageLoader to get image from IndexedDB first, then filesystem
+                        const imagePath = await window.imageLoader.loadImage(filename);
+                        
+                        if (!imagePath) {
+                            throw new Error('Image not found');
+                        }
+                        
+                        const img = document.createElement('img');
+                        img.className = 'question-image';
+                        img.src = imagePath;
+                        img.alt = `Question ${this.currentQuestionIndex + 1} - Image ${index + 1}`;
+                        img.loading = 'lazy';
+                        
+                        // Remove placeholder when image loads
+                        img.onload = () => {
+                            placeholder.remove();
+                        };
+                        
+                        // Add error handling
+                        img.onerror = () => {
+                            imageWrapper.innerHTML = `
+                                <div class="image-error">
+                                    <i class="fas fa-image"></i>
+                                    <small>Image not available: ${filename}</small>
+                                </div>
+                            `;
+                        };
+                        
+                        imageWrapper.appendChild(img);
+                    } catch (error) {
+                        console.warn(`Failed to load image: ${imageInfo.filename}`, error);
+                        imageWrapper.innerHTML = `
+                            <div class="image-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <small>Failed to load: ${imageInfo.filename}</small>
+                            </div>
+                        `;
+                    }
+                })();
             });
         }
     }
@@ -651,23 +679,69 @@ class MultiExamSimulator {
                 const imageWrapper = document.createElement('div');
                 imageWrapper.className = 'explanation-image-wrapper';
                 
-                const img = document.createElement('img');
-                img.className = 'explanation-image';
-                img.src = `./images/${imageInfo.filename}`;
-                img.alt = `Explanation Image ${index + 1}`;
-                img.loading = 'lazy';
+                // Add loading placeholder
+                const placeholder = document.createElement('div');
+                placeholder.className = 'image-placeholder';
+                placeholder.innerHTML = `
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <small>Loading image...</small>
+                    </div>
+                `;
                 
-                img.onerror = () => {
-                    imageWrapper.innerHTML = `
-                        <div class="image-error">
-                            <i class="fas fa-image"></i>
-                            <small>Image not available: ${imageInfo.filename}</small>
-                        </div>
-                    `;
-                };
-                
-                imageWrapper.appendChild(img);
+                imageWrapper.appendChild(placeholder);
                 container.appendChild(imageWrapper);
+                
+                // Load image from IndexedDB or filesystem (non-blocking)
+                (async () => {
+                    try {
+                        // Extract just the filename (last part of path)
+                        // Handles: 'images/ai900/file.jpg' -> 'file.jpg'
+                        let filename = imageInfo.filename;
+                        if (filename.includes('/')) {
+                            filename = filename.split('/').pop();
+                        } else if (filename.includes('\\')) {
+                            filename = filename.split('\\').pop();
+                        }
+                        
+                        // Use imageLoader to get image from IndexedDB first, then filesystem
+                        const imagePath = await window.imageLoader.loadImage(filename);
+                        
+                        if (!imagePath) {
+                            throw new Error('Image not found');
+                        }
+                        
+                        const img = document.createElement('img');
+                        img.className = 'explanation-image';
+                        img.src = imagePath;
+                        img.alt = `Explanation Image ${index + 1}`;
+                        img.loading = 'lazy';
+                        
+                        // Remove placeholder when image loads
+                        img.onload = () => {
+                            placeholder.remove();
+                        };
+                        
+                        img.onerror = () => {
+                            imageWrapper.innerHTML = `
+                                <div class="image-error">
+                                    <i class="fas fa-image"></i>
+                                    <small>Image not available: ${filename}</small>
+                                </div>
+                            `;
+                        };
+                        
+                        imageWrapper.appendChild(img);
+                    } catch (error) {
+                        console.warn(`Failed to load image: ${imageInfo.filename}`, error);
+                        imageWrapper.innerHTML = `
+                            <div class="image-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <small>Failed to load: ${imageInfo.filename}</small>
+                            </div>
+                        `;
+                    }
+                })();
             });
         }
     }
@@ -1206,12 +1280,16 @@ class MultiExamSimulator {
             statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
             statusIcon.className = 'status-icon passed';
             statusText.textContent = 'PASSED';
-            statusText.className = 'result-status passed';
+            statusText.className = 'result-status result-status-chip passed';
         } else {
             statusIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
             statusIcon.className = 'status-icon failed';
             statusText.textContent = 'FAILED';
-            statusText.className = 'result-status failed';
+            statusText.className = 'result-status result-status-chip failed';
+        }
+        const summaryCard = document.getElementById('resultsSummaryCard');
+        if (summaryCard) {
+            summaryCard.classList.toggle('failed', !passed);
         }
         
         // Update scores
@@ -1219,10 +1297,15 @@ class MultiExamSimulator {
         document.getElementById('correct-count').textContent = correct;
         document.getElementById('incorrect-count').textContent = incorrect;
         document.getElementById('time-spent').textContent = `${timeSpent}min`;
+        const timeSecondary = document.getElementById('time-spent-secondary');
+        if (timeSecondary) timeSecondary.textContent = `${timeSpent}min`;
         
         // Update exam name in results
-        document.getElementById('exam-name-result').textContent = this.examData[this.currentExam].name;
-        document.getElementById('exam-name-result').className = `exam-name-badge ${this.currentExam}`;
+        const examNameEl = document.getElementById('exam-name-result');
+        if (examNameEl) {
+            examNameEl.textContent = this.examData[this.currentExam].name;
+            examNameEl.className = `exam-name-pill exam-name-badge ${this.currentExam}`;
+        }
         
         // Update progress bars
         const correctPercentage = (correct / total) * 100;
@@ -1230,6 +1313,24 @@ class MultiExamSimulator {
 
         document.getElementById('correct-progress').style.width = `${correctPercentage}%`;
         document.getElementById('incorrect-progress').style.width = `${incorrectPercentage}%`;
+
+        const accuracyText = document.getElementById('accuracy-percentage');
+        if (accuracyText) accuracyText.textContent = `${Math.round(correctPercentage)}%`;
+        const missedText = document.getElementById('missed-percentage');
+        if (missedText) missedText.textContent = `${Math.round(incorrectPercentage)}%`;
+
+        const totalQuestionsEl = document.getElementById('total-questions-result');
+        if (totalQuestionsEl) totalQuestionsEl.textContent = total;
+        const passTargetEl = document.getElementById('pass-score-target');
+        if (passTargetEl) passTargetEl.textContent = `${this.examData[this.currentExam].passScore}%`;
+        const scoreVsPass = document.getElementById('score-vs-pass');
+        if (scoreVsPass) scoreVsPass.textContent = `${score}% / ${this.examData[this.currentExam].passScore}%`;
+
+        const scoreRing = document.getElementById('scoreRing');
+        if (scoreRing) {
+            const clampedScore = Math.max(0, Math.min(100, score));
+            scoreRing.style.setProperty('--score-deg', `${clampedScore * 3.6}deg`);
+        }
 
         // Generate detailed review
         this.generateDetailedReview();
@@ -1350,6 +1451,14 @@ class MultiExamSimulator {
         if (passed) progress.totalPassed++;
         
         localStorage.setItem(examKey, JSON.stringify(progress));
+
+        if (window.homepage && typeof window.homepage.refreshHeroPreview === 'function') {
+            try {
+                window.homepage.refreshHeroPreview();
+            } catch (error) {
+                console.warn('Failed to refresh hero preview after saving progress:', error);
+            }
+        }
     }
 
     updateProgressDisplay() {

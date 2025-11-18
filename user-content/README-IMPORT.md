@@ -2,6 +2,8 @@
 
 This guide explains how to import exam packs into the Azure AI Exam Simulator.
 
+> ⚠️ **Important:** The public repo never ships official exam dumps (AI-900, AI-102, etc.). Keep those files in private storage and copy/import them locally when running the simulator.
+
 ## Supported Formats
 
 ### JSON Format
@@ -72,19 +74,14 @@ ZIP files containing:
 ```
 user-content/
 ├── exams/
-│   ├── ai900/
+│   ├── <exam-id>/
 │   │   ├── dump.json
 │   │   └── images/
 │   │       ├── image1.jpg
 │   │       └── image2.jpg
-│   ├── ai102/
-│   │   ├── dump.json
-│   │   └── images/
-│   └── custom-exam/
-│       ├── dump.json
-│       └── images/
+│   └── sample-exam.json
 └── imports/
-    └── [temporary upload area]
+  └── [temporary upload area]
 ```
 
 ## Question Types Supported
@@ -178,9 +175,7 @@ You can export exams from the editor to share with others:
 
 ## Example Files
 
-Sample exam files can be found in the `downloads/` folder:
-- `ai900-sample.json` - Sample AI-900 questions
-- `ai102-sample.json` - Sample AI-102 questions
+Need a starting point? Export any exam from the built-in editor or request an exam pack (JSON/ZIP) from your team. Once you have a file, drag it onto the homepage and you're set.
 
 ## Need Help?
 

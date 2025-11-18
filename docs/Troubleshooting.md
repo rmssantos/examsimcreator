@@ -2,7 +2,7 @@
 
 First question blank or counter flash 1/50
 - Ensure exam.html defers start until AI‑102 is ready (ai102QuestionsReady) or data is already present.
-- Confirm dumps/*.js load before loaders.
+- Confirm `exam-loader.js` finishes before `script-multi-exam.js` so question banks exist.
 
 Only 5 AI‑102 questions
 - Verify ai102_dump.js/json are present under portable/dumps

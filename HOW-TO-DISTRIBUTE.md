@@ -4,6 +4,26 @@
 
 The Azure AI Exam Simulator is designed as a **simulator/editor platform** that users can customize with their own exam content. The platform itself does NOT include any exam dumps - users must import their own content.
 
+> ⚠️ **Compliance reminder:** Keep official exam dumps (AI-900, AI-102, etc.) in a private repository or encrypted storage. This public repo only ships the simulator code plus empty drop-zones so it can stay fully open source.
+
+### Recommended Two-Repo Workflow
+
+1. **Public repo (this one):** contains only the simulator (`portable/`), docs, and empty folders (`images/`, `user-content/exams/`).
+2. **Private repo or storage bucket:** holds proprietary exam packs such as `ai900-exam-pack.zip` or `ai102-v2.zip`.
+3. **Distribution:** share the public simulator ZIP openly, then send secure links (or private Git tags) for the exam packs to authorized teammates.
+4. **Automation tip:** add a CI step that zips the simulator from the public repo and attaches it to a Release, while another private pipeline builds encrypted exam packs.
+
+## Distributing the Portable Simulator
+
+The entire platform lives inside the `portable/` folder. To share it:
+
+1. **Zip the folder** (e.g., `portable.zip`) or publish it as a GitHub Release asset.
+2. Recipients **unzip and double-click `index.html`**—no installers, admin rights, or runtimes required.
+3. Optional: include a short `README-team.md` telling them how to launch `python server.py` if they later want automatic exam detection.
+4. Encourage creators to open `editor.html`, build exams, export JSON, and share those files with the rest of the team.
+
+This “plug-and-play” packaging works perfectly for classroom handouts, corporate training kits, or USB distributions.
+
 ## Distribution Model
 
 ### What You Distribute
@@ -16,6 +36,7 @@ The Azure AI Exam Simulator is designed as a **simulator/editor platform** that 
 2. **Exam Packs Separately** (via cloud storage, etc.)
    - Each exam as a standalone package
    - Users download and import what they need
+   - Never push these packs to the public Git history
 
 ## Creating Exam Packages for Distribution
 
@@ -24,7 +45,7 @@ The Azure AI Exam Simulator is designed as a **simulator/editor platform** that 
 Each exam should be packaged with this structure:
 
 ```
-ai900-exam-pack.zip
+<exam-id>-exam-pack.zip
 ├── dump.json              # Question data (required)
 ├── metadata.json          # Exam information (optional but recommended)
 └── images/                # Image assets (if applicable)
@@ -75,7 +96,7 @@ Provides rich information about the exam:
 
 ```json
 {
-  "id": "ai900",
+  "id": "ai900",           // Identifier used at runtime (example only)
   "name": "AI-900",
   "fullName": "Azure AI Fundamentals",
   "duration": 45,
@@ -94,6 +115,8 @@ Provides rich information about the exam:
   "hasImages": true
 }
 ```
+
+> Use `ai900`/`ai102` identifiers only inside **private** packs. The public repo purposefully excludes these files.
 
 If metadata.json is not provided, the simulator will auto-generate basic metadata.
 
@@ -116,10 +139,10 @@ If metadata.json is not provided, the simulator will auto-generate basic metadat
 
 For each exam you want to distribute:
 
-```bash
-cd C:\apps\ai900\portable\user-content\exams\ai900
+```powershell
+cd C:\apps\ai900\portable\user-content\exams\<exam-id>
 # Create a zip with dump.json, metadata.json, and images/
-zip -r ai900-exam-pack.zip dump.json metadata.json images/
+Compress-Archive -Path dump.json, metadata.json, images -DestinationPath ..\..\private\<exam-id>-exam-pack.zip
 ```
 
 ### Step 3: Upload Exam Packs
@@ -138,14 +161,14 @@ Upload each exam package to:
 
 #### Method 1: Manual Import (Recommended)
 
-1. Download the exam pack (e.g., `ai900-exam-pack.zip`)
+1. Download the exam pack (e.g., `ai900-exam-pack.zip` from your private store)
 2. Extract the ZIP file
 3. Copy the contents to:
    ```
    portable/user-content/exams/[exam-id]/
    ```
 
-   Example for AI-900:
+  Example for a private AI-900 pack:
    ```
    portable/user-content/exams/ai900/
    ├── dump.json
@@ -175,28 +198,26 @@ portable/
 └── user-content/
     ├── README-IMPORT.md
     └── exams/
-        ├── ai900/
-        │   ├── dump.json
-        │   ├── metadata.json
-        │   └── images/
-        │       ├── image1.jpg
-        │       └── image2.jpg
-        └── ai102/
-            ├── dump.json
-            ├── metadata.json
-            └── images/
-                └── ai102/
-                    ├── question1.png
-                    └── question2.png
+    ├── <exam-id-a>/
+    │   ├── dump.json
+    │   ├── metadata.json
+    │   └── images/
+    │       ├── image1.jpg
+    │       └── image2.jpg
+    └── <exam-id-b>/
+      ├── dump.json
+      ├── metadata.json
+      └── images/
+        └── question-artifacts
 ```
 
 ## Example Distribution Strategy
 
 ### Option A: Separate Downloads
 
-1. **Simulator**: `exam-simulator-v1.0.zip` (5 MB)
-2. **AI-900 Pack**: `ai900-questions.zip` (15 MB)
-3. **AI-102 Pack**: `ai102-questions.zip` (50 MB)
+1. **Simulator**: `exam-simulator-v1.0.zip` (5 MB, public)
+2. **AI-900 Pack**: `ai900-questions.zip` (15 MB, private)
+3. **AI-102 Pack**: `ai102-questions.zip` (50 MB, private)
 
 Users download the simulator once, then add exam packs as needed.
 
@@ -204,7 +225,7 @@ Users download the simulator once, then add exam packs as needed.
 
 Bundle the simulator with all available exams for users who want everything:
 
-`complete-exam-bundle.zip` (70 MB)
+`complete-exam-bundle.zip` (70 MB – distribute only through private, access-controlled channels)
 - Includes simulator + all exam packs pre-installed
 
 ## Creating Your Own Exam Packs
@@ -244,6 +265,8 @@ Bundle the simulator with all available exams for users who want everything:
 - Include clear README with each pack
 - Version your exam packs (e.g., `ai900-v1.2.zip`)
 - Test imports before distributing
+- Never commit or push official exam dumps to public repositories
+- Double-check `.gitignore` before every commit to ensure `user-content/ai900*`, `user-content/ai102*`, and `images/` remain empty
 
 ### For Users
 

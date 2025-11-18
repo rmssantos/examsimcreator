@@ -21,6 +21,18 @@ python server.py
 
 ## 🎯 Two Usage Modes
 
+### Mode 0: Portable Bundle (No Install Required)
+
+| Best for | People who just want to unzip and double-click |
+|----------|----------------------------------------------|
+
+1. Download the latest release ZIP (or clone the repo) and keep the `portable/` folder intact.
+2. Extract it anywhere—USB drive, Desktop, cloud folder—no admin rights needed.
+3. Double-click `index.html` to use the homepage, `exam.html` to jump straight into an exam, or `editor.html` to build content.
+4. Import exams by dragging `dump.json`/`.zip` files onto the homepage or copying folders into `user-content/exams/`.
+
+> Want richer metadata or guaranteed image paths later? Just open a terminal in the same folder and run `python server.py`. You can hop between zero-install and server mode anytime.
+
 ### Mode 1: With Server (Recommended)
 
 **Best for:** Full features, automatic exam detection, image support
@@ -80,6 +92,8 @@ http://localhost:8000/editor.html
 
 ## 📦 Importing Exams
 
+![Importing Exams](importing_and_editing.gif)
+
 ### Automatic (Server Mode)
 
 Place exam folders in `user-content/exams/`:
@@ -104,6 +118,8 @@ Refresh the page → Exams appear automatically!
 2. Drag `dump.json` file onto the homepage
 3. Exam imported to localStorage
 4. Card appears immediately
+
+Dropping a `.zip` exam pack works too—the simulator reads `dump.json`/`metadata.json` automatically and lets you know if you need to copy bundled images into `user-content/exams/<examId>/images/`.
 
 ---
 
@@ -182,6 +198,8 @@ Click "Export Progress" to download:
 ---
 
 ## 📝 Creating Questions
+
+![Creating Questions](creating_exam.gif)
 
 ### Using the Editor
 

@@ -47,6 +47,47 @@
     return loadMaster(exam);
   }
 
+  function setActiveExam(newExamId, options = {}) {
+    if (!newExamId) return false;
+
+    const { skipUnsavedCheck = false, force = false } = options;
+    if (!force && state.exam === newExamId) {
+      if ($('#examSelect') && $('#examSelect').value !== newExamId) {
+        $('#examSelect').value = newExamId;
+      }
+      return true;
+    }
+
+    if (!skipUnsavedCheck && state.hasUnsavedChanges) {
+      const ok = confirm('You have unsaved changes. Switch exam anyway? (Changes will be lost)');
+      if (!ok) {
+        if ($('#examSelect')) {
+          $('#examSelect').value = state.exam;
+        }
+        return false;
+      }
+    }
+
+    state.exam = newExamId;
+    state.customCode = null;
+    if ($('#examSelect')) {
+      $('#examSelect').value = newExamId;
+    }
+
+    state.items = loadWorkingSet(newExamId);
+    state.savedItemsHash = hashItems(state.items);
+    state.hasUnsavedChanges = false;
+    updateCategoryFilter();
+    applyFilter();
+    state.currentIndex = 0;
+    renderList();
+    renderForm();
+    updateUnsavedIndicator();
+    updatePersistenceHint();
+
+    return true;
+  }
+
   let state = {
     exam: 'ai900',
     customCode: null, // when exam === 'custom', holds code for exam-dumps/<code>.json and localStorage keys
@@ -443,23 +484,26 @@
       hint = document.createElement('div');
       hint.id = 'persistence-hint';
       hint.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:#856404;';
-      hint.innerHTML = `
-        <strong><i class="fas fa-info-circle"></i> To persist changes permanently:</strong>
-        <ol style="margin:8px 0 0 20px;padding:0;line-height:1.6;">
-          <li>Click "Export Questions" below</li>
-          <li>Replace <code>user-content/exams/${state.exam}/dump.json</code> with downloaded file</li>
-          <li>Run: <code>python generate-exam-data-js.py ${state.exam}</code></li>
-          <li>Refresh the page (F5)</li>
-        </ol>
-        <small style="opacity:0.8;">Changes are currently saved to your browser only.</small>
-      `;
+      hint.innerHTML = '';
 
       // Insert after export button's parent
       exportButton.parentElement.parentElement.appendChild(hint);
     }
 
+    const examId = state.exam === 'custom' && state.customCode ? state.customCode : state.exam || 'custom-exam';
+    hint.innerHTML = `
+      <strong><i class="fas fa-info-circle"></i> Want changes beyond this browser?</strong>
+      <ol style="margin:8px 0 0 20px;padding:0;line-height:1.6;">
+        <li>Click <em>Export Questions</em> to download <code>${examId}_dump_YYYY-MM-DD.json</code>.</li>
+        <li>Copy it over <code>user-content/exams/${examId}/dump.json</code> (create the folder if it doesn't exist).</li>
+        <li>Include any updated <code>metadata.json</code> or images under <code>user-content/exams/${examId}/images/</code>.</li>
+        <li>Refresh the app (F5) or zip the folder and drop it on the home page importer to reuse elsewhere.</li>
+      </ol>
+      <small style="opacity:0.8;">Until then, edits live in this browser's localStorage.</small>
+    `;
+
     // Only show hint if there are actual changes saved
-    const hasLocalStorageChanges = localStorage.getItem(`custom_${state.exam}_questions`) !== null;
+    const hasLocalStorageChanges = localStorage.getItem(`custom_${examId}_questions`) !== null;
     hint.style.display = hasLocalStorageChanges ? 'block' : 'none';
   }
 
@@ -530,12 +574,10 @@
       <div style="background:#e7f1ff;border:1px solid #2b7cff;border-radius:8px;padding:14px;margin-bottom:16px;">
         <strong style="color:#0b60a9;"><i class="fas fa-arrow-right"></i> Next Steps:</strong>
         <ol style="margin:8px 0 0 20px;padding:0;line-height:1.8;color:#333;">
-          <li>Locate the downloaded file: <code>${filename}</code></li>
-          <li>Replace <code>user-content/exams/${examId}/dump.json</code></li>
-          <li>Regenerate exam-data.js:
-            <pre style="background:#f5f5f5;padding:8px;border-radius:4px;margin:6px 0;font-size:12px;">python generate-exam-data-js.py ${examId}</pre>
-          </li>
-          <li>Refresh the editor (F5) to load updated file</li>
+          <li>Locate the downloaded file: <code>${filename}</code>.</li>
+          <li>Replace <code>user-content/exams/${examId}/dump.json</code> (or create that folder for a brand-new exam).</li>
+          <li>Optional: update <code>metadata.json</code> and copy any referenced images into <code>user-content/exams/${examId}/images/</code>.</li>
+          <li>Refresh the app (F5) or zip the folder and drag it into the home page importer to reuse elsewhere.</li>
         </ol>
       </div>
 
@@ -1012,27 +1054,7 @@
   // Bind events
   function bind(){
     $('#examSelect').addEventListener('change', ()=>{
-      // Check for unsaved changes before switching exams
-      if (state.hasUnsavedChanges) {
-        if (!confirm('You have unsaved changes. Switch exam anyway? (Changes will be lost)')) {
-          // Revert select to previous value
-          const currentExam = state.exam;
-          setTimeout(() => { $('#examSelect').value = currentExam; }, 0);
-          return;
-        }
-      }
-
-      state.exam = $('#examSelect').value;
-      state.customCode = null;
-      state.items = loadWorkingSet(state.exam);
-      state.savedItemsHash = hashItems(state.items); // Reset saved hash
-      state.hasUnsavedChanges = false;
-      updateCategoryFilter();
-      applyFilter();
-      state.currentIndex = 0;
-      renderList();
-      renderForm();
-      updateUnsavedIndicator();
+      setActiveExam($('#examSelect').value);
     });
     $('#searchInput').addEventListener('input', ()=>{ applyFilter(); renderList(); });
 
@@ -1166,6 +1188,13 @@
       notify(`New custom exam initialized: ${code}`);
     });
   }
+
+  document.addEventListener('editorExamListReady', (event) => {
+    const preferredExam = event?.detail?.defaultExamId || ($('#examSelect')?.value) || state.exam;
+    if (preferredExam) {
+      setActiveExam(preferredExam, { skipUnsavedCheck: true });
+    }
+  });
 
   // Initialize
   document.addEventListener('DOMContentLoaded', ()=>{
