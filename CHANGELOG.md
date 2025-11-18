@@ -239,7 +239,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on:
 
 ## Support
 
-- **Issues**: https://github.com/rmssantos/examsimcreator/issues
+- **Issues**: https://github.com/rmssantos/examsim/issues
 - **Documentation**: [README.md](./README.md)
 - **Quick Start**: [QUICKSTART.md](./QUICKSTART.md)
 

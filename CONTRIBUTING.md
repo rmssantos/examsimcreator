@@ -542,7 +542,7 @@ window.examManager.detectAvailableExams().then(console.log);
 
 If you have questions about contributing:
 1. Check existing documentation
-2. Search existing issues
+2. Search existing issues on [GitHub](https://github.com/rmssantos/examsim/issues)
 3. Open a new issue with `question` label
 4. Reach out to maintainers
 

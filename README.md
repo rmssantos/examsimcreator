@@ -3,7 +3,22 @@
 > **A universal, offline-capable exam practice platform with dynamic question types, visual editor, and comprehensive progress tracking.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/exam-simulator)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/rmssantos/examsim)
+
+---
+
+## ⚠️ Educational Tool Disclaimer
+
+**This exam simulator is provided solely as a study aid and practice tool.**
+
+- ❌ **Not affiliated with** Microsoft, Azure, or any certification authority
+- 📚 **Educational purposes only** - for personal study and practice
+- ⚡ **Exam content subject to change** - official exams are regularly updated
+- ✅ **No guarantees** - this tool does not guarantee exam success
+- 📖 **Always refer to official documentation** for authoritative certification information
+- ⚖️ **User responsibility** - ensure imported content complies with applicable terms of service
+
+> Use this simulator to practice exam-taking skills, time management, and knowledge retention. Always supplement with official Microsoft Learn paths and documentation.
 
 ---
 
@@ -632,7 +647,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For issues, questions, or feature requests:
-- Open an issue on GitHub
+- Open an issue on [GitHub](https://github.com/rmssantos/examsim/issues)
 - Check the [Troubleshooting](#-troubleshooting) section
 - Review documentation in `docs/` folder
 
