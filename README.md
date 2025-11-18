@@ -100,10 +100,12 @@ portable/
 ├── index.html              # Main homepage (exam selection)
 ├── exam.html               # Exam simulator
 ├── editor.html             # Question editor
+├── image-inspector.html    # Image inspection utility
 ├── server.py               # Local HTTP server
 ├── exam-manager.js         # Exam detection and management
 ├── exam-loader.js          # Dynamic exam loading
 ├── image-loader.js         # Image handling
+├── image-storage.js        # Image storage system
 ├── script-multi-exam.js    # Main exam logic
 ├── editor.js               # Editor functionality
 ├── style-new.css           # Core styles
@@ -111,17 +113,22 @@ portable/
 ├── homepage-styles.css     # Homepage specific styles
 ├── modern-enhancements.css # Modern UI enhancements
 ├── multi-exam-styles.css   # Multi-exam support
+├── creating_exam.gif       # Demo GIF for documentation
+├── importing_and_editing.gif # Demo GIF for documentation
 ├── generate-exam-data-js.py # Generate exam-data.js from dumps
 ├── docs/                   # Documentation folder
-├── images/
-│   ├── README.md           # Explains local-only media drop zone
-│   └── .gitkeep            # Keeps folder in git without assets
+│   ├── compliance-summary.md
+│   ├── Data-and-Dumps.md
+│   ├── public-repo-plan.md
+│   ├── Troubleshooting.md
+│   └── UI-UX.md
+├── exam-dumps/             # Custom exam files folder
+│   └── README.md
 └── user-content/
-  ├── README-IMPORT.md    # Import instructions
-  └── exams/
-    ├── .gitkeep        # Keeps folder tracked (empty by default)
-    ├── ai300.json      # Tiny sample exam (non-official)
-    └── high5_dump.json # Example practice data placeholder
+    ├── README-IMPORT.md    # Import instructions
+    ├── imports/            # Temporary import staging area
+    └── exams/              # User exam content (empty by default)
+        └── .gitkeep
 ```
 
 ---
@@ -180,19 +187,6 @@ user-content/exams/<exam-id>/
 4. A card appears immediately (may show generic metadata)
 
 You can also drop `.zip` exam packs. The simulator will read `dump.json`/`metadata.json` automatically and remind you to copy any bundled images into `user-content/exams/<examId>/images/`.
-
----
-
-### Method 3: Using Python Generator
-
-Convert exam dumps to JavaScript format:
-
-```bash
-# Generate exam-data.js from dump files
-python generate-exam-data-js.py
-
-# This creates exam-data.js which is automatically loaded
-```
 
 ---
 
@@ -657,13 +651,13 @@ For issues, questions, or feature requests:
 - 5+ question types
 
 ### Version 2.1 - Planned 🔜
-- ZIP import support for exam packs
 - Question analytics and insights
 - Performance trends over time
 - Mobile responsive improvements
 - Accessibility enhancements (WCAG 2.1 AA)
 - More question types (hotspot, case studies)
 - PDF export for results
+- Advanced search and filtering
 
 ### Future Enhancements 💡
 - Multi-language support
