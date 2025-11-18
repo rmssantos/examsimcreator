@@ -9,12 +9,8 @@ Only 5 AI‑102 questions
 - Ensure editor and exam load dumps before any loader or fallback
 
 Results visible during exam
-- #results-screen must be display:none by default; it’s shown only after finish
+- #results-screen must be display:none by default; it's shown only after finish
 - Confirm no CSS overrides leak visibility
-
-Keyboard shortcuts not working
-- Focus might be inside an input; click outside or press Esc
-- Ensure script-multi-exam.js is included and no console errors
 
 Custom exam not loading
 - Check localStorage key name: custom_<code>_questions

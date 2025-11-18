@@ -1,36 +1,10 @@
 # UI and UX Guidelines
 
-## Keyboard Shortcuts
-
-The exam simulator includes comprehensive keyboard navigation for efficiency.
-
-### During Exam
-
-| Key | Action |
-|-----|--------|
-| `←` (Left Arrow) | Previous question |
-| `→` (Right Arrow) | Next question |
-| `Enter` | Next question |
-| `A-Z` or `1-9` | Select answer option (A=1st, B=2nd, etc.) |
-| `M` | Mark current question for review |
-| `S` | Show/hide answer and explanation |
-| `Esc` | Close overlays (feedback panel, modals) |
-
-### General Navigation
-
-| Key | Action |
-|-----|--------|
-| `Tab` | Cycle through interactive elements |
-| `Space` | Toggle checkboxes (MULTI questions) |
-| `Enter` | Activate focused button |
-
----
-
 ## Answer Highlighting
 
 ### Reveal Answer Behavior
 
-When the user clicks "Show Answer" or presses `S`:
+When the user clicks "Show Answer":
 
 **Correct Answer:**
 - ✅ Entire option card turns **green**
