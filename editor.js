@@ -4,6 +4,13 @@
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
   // Load master data from window.userExams or examManager
   function loadMaster(exam){
     // Try loading from examManager first (supports all exams including localStorage)
@@ -113,7 +120,16 @@
       const title = (q.question || '').replace(/\n/g,' ').slice(0,120);
       // Determine type: special types via question_type; else MULTI if correct is an array, otherwise STANDARD
       const type = q.question_type || (Array.isArray(q.correct) ? 'MULTI' : 'STANDARD');
-      div.innerHTML = `<div class="small">#${q.id ?? 'new'} • ${type} • ${q.module || '-'}</div><div>${title}</div>`;
+
+      const meta = document.createElement('div');
+      meta.className = 'small';
+      meta.textContent = `#${q.id ?? 'new'} • ${type} • ${q.module || '-'}`;
+
+      const titleDiv = document.createElement('div');
+      titleDiv.textContent = title;
+
+      div.appendChild(meta);
+      div.appendChild(titleDiv);
       div.addEventListener('click', ()=>{ state.currentIndex = i; renderForm(); renderList(); });
       list.appendChild(div);
     });
@@ -491,12 +507,13 @@
     }
 
     const examId = state.exam === 'custom' && state.customCode ? state.customCode : state.exam || 'custom-exam';
+    const safeExamId = escapeHtml(examId);
     hint.innerHTML = `
       <strong><i class="fas fa-info-circle"></i> Want changes beyond this browser?</strong>
       <ol style="margin:8px 0 0 20px;padding:0;line-height:1.6;">
-        <li>Click <em>Export Questions</em> to download <code>${examId}_dump_YYYY-MM-DD.json</code>.</li>
-        <li>Copy it over <code>user-content/exams/${examId}/dump.json</code> (create the folder if it doesn't exist).</li>
-        <li>Include any updated <code>metadata.json</code> or images under <code>user-content/exams/${examId}/images/</code>.</li>
+        <li>Click <em>Export Questions</em> to download <code>${safeExamId}_dump_YYYY-MM-DD.json</code>.</li>
+        <li>Copy it over <code>user-content/exams/${safeExamId}/dump.json</code> (create the folder if it doesn't exist).</li>
+        <li>Include any updated <code>metadata.json</code> or images under <code>user-content/exams/${safeExamId}/images/</code>.</li>
         <li>Refresh the app (F5) or zip the folder and drop it on the home page importer to reuse elsewhere.</li>
       </ol>
       <small style="opacity:0.8;">Until then, edits live in this browser's localStorage.</small>
@@ -556,6 +573,8 @@
   }
 
   function showExportInstructions(examId, filename){
+    const safeExamId = escapeHtml(examId);
+    const safeFilename = escapeHtml(filename);
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
 
@@ -567,16 +586,16 @@
         <i class="fas fa-check-circle" style="font-size:32px;color:#28a745;"></i>
         <div>
           <h3 style="margin:0;color:#333;font-size:18px;">Export Complete!</h3>
-          <p style="margin:4px 0 0 0;color:#666;font-size:14px;">Downloaded: <code>${filename}</code></p>
+          <p style="margin:4px 0 0 0;color:#666;font-size:14px;">Downloaded: <code>${safeFilename}</code></p>
         </div>
       </div>
 
       <div style="background:#e7f1ff;border:1px solid #2b7cff;border-radius:8px;padding:14px;margin-bottom:16px;">
         <strong style="color:#0b60a9;"><i class="fas fa-arrow-right"></i> Next Steps:</strong>
         <ol style="margin:8px 0 0 20px;padding:0;line-height:1.8;color:#333;">
-          <li>Locate the downloaded file: <code>${filename}</code>.</li>
-          <li>Replace <code>user-content/exams/${examId}/dump.json</code> (or create that folder for a brand-new exam).</li>
-          <li>Optional: update <code>metadata.json</code> and copy any referenced images into <code>user-content/exams/${examId}/images/</code>.</li>
+          <li>Locate the downloaded file: <code>${safeFilename}</code>.</li>
+          <li>Replace <code>user-content/exams/${safeExamId}/dump.json</code> (or create that folder for a brand-new exam).</li>
+          <li>Optional: update <code>metadata.json</code> and copy any referenced images into <code>user-content/exams/${safeExamId}/images/</code>.</li>
           <li>Refresh the app (F5) or zip the folder and drag it into the home page importer to reuse elsewhere.</li>
         </ol>
       </div>
@@ -786,7 +805,7 @@
     pvType.textContent = type;
 
     // Render question text with simple markdown image stripping (images shown separately)
-    const stripMdImages = (t) => (t||'').replace(/!\[[^\]]*\]\([^\)]+\)/g, '').replace(/\n/g,'<br>');
+    const stripMdImages = (t) => escapeHtml((t||'').replace(/!\[[^\]]*\]\([^\)]+\)/g, '')).replace(/\n/g,'<br>');
     pvQuestion.innerHTML = stripMdImages(q.question || '');
 
     // Question images
@@ -832,7 +851,7 @@
       order.forEach((idx, pos) => {
         const row = document.createElement('div');
         row.className = 'pv-chip';
-        row.innerHTML = `<span>${pos+1}.</span><span>${(q.options||[])[idx]}</span>`;
+        row.innerHTML = `<span>${pos+1}.</span><span>${escapeHtml((q.options||[])[idx])}</span>`;
         const up = document.createElement('button'); up.textContent = '↑'; up.className = 'x'; up.disabled = pos === 0;
         const down = document.createElement('button'); down.textContent = '↓'; down.className = 'x'; down.disabled = pos === order.length - 1;
         up.addEventListener('click', () => {
@@ -864,7 +883,7 @@
         (q.options||[]).forEach((opt, idx) => {
           if (!sel.includes(idx)){
             const btn = document.createElement('button'); btn.type='button'; btn.className='pv-dd-btn';
-            btn.innerHTML = `<span class="pv-letters">${letter(idx)}</span> ${opt}`;
+            btn.innerHTML = `<span class="pv-letters">${letter(idx)}</span> ${escapeHtml(opt)}`;
             // Click to add
             btn.addEventListener('click', ()=>{ if (sel.length < required){ sel.push(idx); q.correct=sel; renderPreview(q); }});
             // Drag support
@@ -879,7 +898,7 @@
         // Target chips
         sel.forEach((idx) => {
           const chip = document.createElement('div'); chip.className='pv-dd-chip';
-          chip.innerHTML = `<span class="pv-letters">${letter(idx)}</span> <span>${(q.options||[])[idx]}</span>`;
+          chip.innerHTML = `<span class="pv-letters">${letter(idx)}</span> <span>${escapeHtml((q.options||[])[idx])}</span>`;
           const rm = document.createElement('button'); rm.className='rm'; rm.innerHTML='×';
           rm.addEventListener('click', ()=>{ const pos=sel.indexOf(idx); if (pos>=0){ sel.splice(pos,1); q.correct=sel; renderPreview(q); }});
           chip.appendChild(rm);
@@ -909,7 +928,7 @@
           const div = document.createElement('div');
           div.className = 'pv-option pv-clickable';
           if (corr.includes(idx)) div.classList.add('selected');
-          div.innerHTML = `<span class="pv-letters">${letter(idx)}</span><div>${opt}</div>`;
+          div.innerHTML = `<span class="pv-letters">${letter(idx)}</span><div>${escapeHtml(opt)}</div>`;
           div.addEventListener('click', ()=>{
             if (isMulti) {
               const a = Array.isArray(q.correct) ? q.correct.slice() : [];

@@ -1,4 +1,13 @@
 // Função para carregar e cachear imagens locais
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 class ImageLoader {
     constructor() {
         this.baseUrl = './images/'; // Fallback para imagens antigas
@@ -15,27 +24,28 @@ class ImageLoader {
     }
 
     async loadImage(filename) {
+        const cacheKey = this.currentExam ? `${this.currentExam}::${filename}` : filename;
         // Se já está em cache, retornar
-        if (this.cache.has(filename)) {
-            return this.cache.get(filename);
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
         }
 
         // Se já está sendo carregada, esperar o promise existente
-        if (this.loadingPromises.has(filename)) {
-            return this.loadingPromises.get(filename);
+        if (this.loadingPromises.has(cacheKey)) {
+            return this.loadingPromises.get(cacheKey);
         }
 
         // Criar novo promise de carregamento
         const loadPromise = this.loadLocalImage(filename);
-        this.loadingPromises.set(filename, loadPromise);
+        this.loadingPromises.set(cacheKey, loadPromise);
 
         try {
             const imagePath = await loadPromise;
-            this.cache.set(filename, imagePath);
-            this.loadingPromises.delete(filename);
+            this.cache.set(cacheKey, imagePath);
+            this.loadingPromises.delete(cacheKey);
             return imagePath;
         } catch (error) {
-            this.loadingPromises.delete(filename);
+            this.loadingPromises.delete(cacheKey);
             console.warn(`Falha ao carregar imagem: ${filename}`, error);
             return null;
         }
@@ -133,7 +143,7 @@ function renderQuestionImage(imageFilename, altText = '', className = 'question-
             placeholder.replaceWith(img);
         } catch (error) {
             console.warn(`Failed to load image: ${imageFilename}`, error);
-            placeholder.innerHTML = `<div class="image-error" style="color: #dc3545; text-align: center; padding: 20px; font-size: 14px;"><i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px;"></i><div>Imagem não disponível: ${imageFilename}</div></div>`;
+            placeholder.innerHTML = `<div class="image-error" style="color: #dc3545; text-align: center; padding: 20px; font-size: 14px;"><i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px;"></i><div>Imagem não disponível: ${escapeHtml(imageFilename)}</div></div>`;
         }
     }, 0);
 

@@ -3,6 +3,10 @@
 *.tmp
 *.temp
 
+# Local generated exam artifacts (avoid root clutter)
+/dump.json
+/metadata.json
+
 # OS files
 .DS_Store
 Thumbs.db

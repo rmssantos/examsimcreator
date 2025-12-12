@@ -264,7 +264,7 @@ You can also drop `.zip` exam packs. The simulator will read `dump.json`/`metada
 - **Visual Editing** - WYSIWYG question editor
 - **Live Preview** - See questions as they'll appear
 - **Import/Export** - JSON import/export for sharing
-- **Image Upload** - Reference images in questions
+- **Image Upload (server mode)** - Upload/copy images into `user-content/exams/<examId>/images/` and reference them in questions
 - **Metadata Editor** - Configure exam settings
 - **Save States** - Auto-save to localStorage
 

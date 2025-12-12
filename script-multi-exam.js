@@ -57,7 +57,48 @@ class MultiExamSimulator {
         this.startTime = null;
         this.timer = null;
 
+        this.syncBuiltInMetadata();
+
         this.init();
+    }
+
+    // If an exam pack was imported with the same ID as a built-in exam
+    // (e.g. ai900), prefer the stored metadata so UI/timer reflect it.
+    syncBuiltInMetadata() {
+        const applyMeta = (examId) => {
+            try {
+                // Prefer window.userExams metadata (server mode), else localStorage
+                const metaFromMemory = window.userExams && window.userExams[examId] && window.userExams[examId].metadata;
+                let meta = metaFromMemory;
+                if (!meta) {
+                    const raw = localStorage.getItem(`exam_metadata_${examId}`);
+                    meta = raw ? JSON.parse(raw) : null;
+                }
+                if (!meta || typeof meta !== 'object') return;
+                const target = this.examData[examId];
+                if (!target) return;
+
+                if (meta.name) target.name = String(meta.name);
+                if (meta.fullName) target.fullName = String(meta.fullName);
+
+                const dur = Number(meta.duration);
+                if (Number.isFinite(dur) && dur > 0) target.duration = dur;
+
+                const qc = Number(meta.questionCount);
+                if (Number.isFinite(qc) && qc > 0) target.questionCount = qc;
+
+                const ps = Number(meta.passScore);
+                if (Number.isFinite(ps) && ps > 0) target.passScore = ps;
+
+                if (Array.isArray(meta.modules)) target.modules = meta.modules;
+                if (Array.isArray(meta.resources)) target.resources = meta.resources;
+            } catch (_) {
+                // ignore invalid metadata
+            }
+        };
+
+        applyMeta('ai900');
+        applyMeta('ai102');
     }
 
     init() {
@@ -68,34 +109,43 @@ class MultiExamSimulator {
         // Exam-only mode: if exam param is provided, auto-start in this page
         const params = new URLSearchParams(window.location.search);
         const examParam = params.get('exam');
-        if (examParam && this.examData[examParam]) {
-            this.currentExam = examParam;
-            let started = false;
-            const maybeStart = () => {
-                if (!started && this.examData[this.currentExam].questions.length > 0) {
-                    started = true;
+        if (examParam && examParam !== 'custom') {
+            // Support dynamic exams loaded via exam-loader.js/localStorage (not only ai900/ai102)
+            if (!this.examData[examParam]) {
+                const loaded = this.loadExamFromRuntime(examParam);
+                if (loaded) {
+                    this.currentExam = examParam;
                     this.startExam();
                 }
-            };
-            if (examParam === 'ai102') {
-                // If loader already populated, use it immediately
-                if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-                    const got = window.ai102Questions.getAllQuestions();
-                    if (Array.isArray(got) && got.length > 0) {
-                        this.examData['ai102'].questions = got;
-                        maybeStart();
-                    }
-                }
-                // Also listen for readiness in case data arrives slightly later
-                document.addEventListener('ai102QuestionsReady', () => {
-                    if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-                        this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-                        maybeStart();
-                    }
-                });
             } else {
-                // For AI-900 or other types, start when questions present
-                setTimeout(maybeStart, 50);
+                this.currentExam = examParam;
+                let started = false;
+                const maybeStart = () => {
+                    if (!started && this.examData[this.currentExam].questions.length > 0) {
+                        started = true;
+                        this.startExam();
+                    }
+                };
+                if (examParam === 'ai102') {
+                    // If loader already populated, use it immediately
+                    if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
+                        const got = window.ai102Questions.getAllQuestions();
+                        if (Array.isArray(got) && got.length > 0) {
+                            this.examData['ai102'].questions = got;
+                            maybeStart();
+                        }
+                    }
+                    // Also listen for readiness in case data arrives slightly later
+                    document.addEventListener('ai102QuestionsReady', () => {
+                        if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
+                            this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
+                            maybeStart();
+                        }
+                    });
+                } else {
+                    // For AI-900 or other types, start when questions present
+                    setTimeout(maybeStart, 50);
+                }
             }
         }
 
@@ -379,15 +429,52 @@ class MultiExamSimulator {
         const examParam = params.get('exam');
         const code = params.get('code');
         if (examParam === 'custom' && code) {
+            const getMeta = (questions) => {
+                // 1) Prefer existing metadata
+                try {
+                    const rawMeta = localStorage.getItem(`exam_metadata_${code}`);
+                    if (rawMeta) {
+                        const parsed = JSON.parse(rawMeta);
+                        if (parsed && typeof parsed === 'object') return parsed;
+                    }
+                } catch (_) {}
+
+                // 2) Generate metadata using ExamManager logic if available
+                try {
+                    if (window.examManager && typeof window.examManager.generateMetadata === 'function') {
+                        return window.examManager.generateMetadata(code, Array.isArray(questions) ? questions : []);
+                    }
+                } catch (_) {}
+
+                // 3) Minimal fallback
+                const is900 = String(code).includes('900');
+                const is102 = String(code).includes('102');
+                return {
+                    name: code.toUpperCase(),
+                    fullName: code,
+                    duration: is102 ? 150 : 45,
+                    questionCount: 45,
+                    passScore: is900 ? 75 : 70,
+                    modules: []
+                };
+            };
+
             // Try localStorage override first
             try {
                 const raw = localStorage.getItem(`custom_${code}_questions`);
                 if (raw) {
                     const data = JSON.parse(raw);
                     if (Array.isArray(data) && data.length) {
+                        const meta = getMeta(data);
                         this.examData['custom'] = {
-                            name: code.toUpperCase(), fullName: code, duration: 60, questionCount: 45, passScore: 70, questions: data,
-                            modules: [], resources: []
+                            name: meta.name || code.toUpperCase(),
+                            fullName: meta.fullName || meta.name || code,
+                            duration: Number.isFinite(Number(meta.duration)) ? Number(meta.duration) : 45,
+                            questionCount: Number.isFinite(Number(meta.questionCount)) ? Number(meta.questionCount) : 45,
+                            passScore: Number.isFinite(Number(meta.passScore)) ? Number(meta.passScore) : 70,
+                            questions: data,
+                            modules: Array.isArray(meta.modules) ? meta.modules : [],
+                            resources: []
                         };
                         this.currentExam = 'custom';
                         return true;
@@ -400,9 +487,16 @@ class MultiExamSimulator {
                 if (resp.ok) {
                     const data = await resp.json();
                     if (Array.isArray(data) && data.length) {
+                        const meta = getMeta(data);
                         this.examData['custom'] = {
-                            name: code.toUpperCase(), fullName: code, duration: 60, questionCount: 45, passScore: 70, questions: data,
-                            modules: [], resources: []
+                            name: meta.name || code.toUpperCase(),
+                            fullName: meta.fullName || meta.name || code,
+                            duration: Number.isFinite(Number(meta.duration)) ? Number(meta.duration) : 45,
+                            questionCount: Number.isFinite(Number(meta.questionCount)) ? Number(meta.questionCount) : 45,
+                            passScore: Number.isFinite(Number(meta.passScore)) ? Number(meta.passScore) : 70,
+                            questions: data,
+                            modules: Array.isArray(meta.modules) ? meta.modules : [],
+                            resources: []
                         };
                         this.currentExam = 'custom';
                         return true;
@@ -412,6 +506,58 @@ class MultiExamSimulator {
             alert(`Custom exam not found: ${code}`);
         }
         return false;
+    }
+
+    // Load an arbitrary exam by ID from window.userExams or localStorage.
+    // Returns true if the exam was loaded into this.examData.
+    loadExamFromRuntime(examId) {
+        if (!examId) return false;
+
+        // Prefer in-memory exams (server mode auto-detection)
+        const fromMemory = window.userExams && window.userExams[examId];
+        if (fromMemory && Array.isArray(fromMemory.questions) && fromMemory.questions.length > 0) {
+            const metadata = fromMemory.metadata || {};
+            this.examData[examId] = {
+                name: metadata.name || examId.toUpperCase(),
+                fullName: metadata.fullName || metadata.name || `Exam: ${examId}`,
+                duration: metadata.duration || 45,
+                questionCount: metadata.questionCount || 45,
+                passScore: metadata.passScore || 70,
+                questions: fromMemory.questions,
+                modules: metadata.modules || [],
+                resources: metadata.resources || []
+            };
+            return true;
+        }
+
+        // Fall back to localStorage imports
+        try {
+            const raw = localStorage.getItem(`custom_${examId}_questions`);
+            if (!raw) return false;
+            const questions = JSON.parse(raw);
+            if (!Array.isArray(questions) || questions.length === 0) return false;
+            let metadata = {};
+            try {
+                const metaRaw = localStorage.getItem(`exam_metadata_${examId}`);
+                metadata = metaRaw ? JSON.parse(metaRaw) : {};
+            } catch (_) {
+                metadata = {};
+            }
+            this.examData[examId] = {
+                name: metadata.name || examId.toUpperCase(),
+                fullName: metadata.fullName || metadata.name || `Exam: ${examId}`,
+                duration: metadata.duration || 45,
+                questionCount: metadata.questionCount || 45,
+                passScore: metadata.passScore || 70,
+                questions,
+                modules: metadata.modules || [],
+                resources: metadata.resources || []
+            };
+            return true;
+        } catch (error) {
+            console.warn(`Failed to load exam ${examId} from localStorage:`, error);
+            return false;
+        }
     }
 
     _completeExamSelection(examType) {
@@ -641,12 +787,12 @@ class MultiExamSimulator {
                         
                         // Add error handling
                         img.onerror = () => {
-                            imageWrapper.innerHTML = `
-                                <div class="image-error">
-                                    <i class="fas fa-image"></i>
-                                    <small>Image not available: ${filename}</small>
-                                </div>
-                            `;
+                                        imageWrapper.innerHTML = `
+                                            <div class="image-error">
+                                                <i class="fas fa-image"></i>
+                                                <small>Image not available: ${this.escapeHtml(filename)}</small>
+                                            </div>
+                                        `;
                         };
                         
                         imageWrapper.appendChild(img);
@@ -655,7 +801,7 @@ class MultiExamSimulator {
                         imageWrapper.innerHTML = `
                             <div class="image-error">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                <small>Failed to load: ${imageInfo.filename}</small>
+                                <small>Failed to load: ${this.escapeHtml(imageInfo.filename)}</small>
                             </div>
                         `;
                     }
@@ -726,7 +872,7 @@ class MultiExamSimulator {
                             imageWrapper.innerHTML = `
                                 <div class="image-error">
                                     <i class="fas fa-image"></i>
-                                    <small>Image not available: ${filename}</small>
+                                    <small>Image not available: ${this.escapeHtml(filename)}</small>
                                 </div>
                             `;
                         };
@@ -737,7 +883,7 @@ class MultiExamSimulator {
                         imageWrapper.innerHTML = `
                             <div class="image-error">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                <small>Failed to load: ${imageInfo.filename}</small>
+                                <small>Failed to load: ${this.escapeHtml(imageInfo.filename)}</small>
                             </div>
                         `;
                     }
@@ -747,8 +893,13 @@ class MultiExamSimulator {
     }
 
     formatQuestionText(text) {
+        // Escape any raw HTML from imported content to prevent injection.
+        const safe = this.escapeHtml(text);
         // Handle line breaks and formatting
-        let formattedText = text.replace(/\\n/g, '<br>').replace(/✑/g, '•');
+        let formattedText = safe
+            .replace(/\\n/g, '<br>')
+            .replace(/\n/g, '<br>')
+            .replace(/✑/g, '•');
         
         // Process Markdown images if processQuestionContent is available
         if (typeof processQuestionContent === 'function') {
@@ -756,6 +907,15 @@ class MultiExamSimulator {
         }
         
         return formattedText;
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     displayOptions(question) {
@@ -802,7 +962,7 @@ class MultiExamSimulator {
                     item.innerHTML = `
                         <span class="sequence-drag-handle"><i class="fas fa-grip-vertical"></i></span>
                         <span class="sequence-pos">${pos + 1}.</span>
-                        <span class="sequence-text">${question.options[optIndex]}</span>
+                        <span class="sequence-text">${this.escapeHtml(question.options[optIndex])}</span>
                         <span class="sequence-actions">
                             <button type="button" class="seq-btn up" title="Move up"><i class="fas fa-chevron-up"></i></button>
                             <button type="button" class="seq-btn down" title="Move down"><i class="fas fa-chevron-down"></i></button>
@@ -983,7 +1143,7 @@ class MultiExamSimulator {
                         const btn = document.createElement('button');
                         btn.type = 'button';
                         btn.className = 'ddselect-btn';
-                        btn.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + idx)}</span><span class="option-text">${opt}</span>`;
+                        btn.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + idx)}</span><span class="option-text">${this.escapeHtml(opt)}</span>`;
                         btn.addEventListener('click', () => {
                             if (sel.length < required && !sel.includes(idx)) {
                                 sel.push(idx);
@@ -997,7 +1157,7 @@ class MultiExamSimulator {
                 sel.forEach((idx, pos) => {
                     const chip = document.createElement('div');
                     chip.className = 'ddselect-chip';
-                    chip.innerHTML = `<span class="chip-index">${pos + 1}.</span> <span class="chip-text">${question.options[idx]}</span>`;
+                    chip.innerHTML = `<span class="chip-index">${pos + 1}.</span> <span class="chip-text">${this.escapeHtml(question.options[idx])}</span>`;
                     const rm = document.createElement('button');
                     rm.type = 'button';
                     rm.className = 'chip-remove';
@@ -1061,7 +1221,7 @@ class MultiExamSimulator {
 
             const label = document.createElement('label');
             label.htmlFor = `option-${index}`;
-            label.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}</span><span class="option-text">${option}</span>`;
+            label.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}</span><span class="option-text">${this.escapeHtml(option)}</span>`;
 
             optionDiv.appendChild(input);
             optionDiv.appendChild(label);
@@ -1118,18 +1278,18 @@ class MultiExamSimulator {
             : '<i class="fas fa-times-circle" style="color: #dc3545;"></i> Incorrect';
         
         if (isSequence) {
-            const letters = (correctAnswer || []).map(i => `${String.fromCharCode(65 + i)}. ${question.options[i]}`);
+            const letters = (correctAnswer || []).map(i => `${String.fromCharCode(65 + i)}. ${this.escapeHtml(question.options[i])}`);
             correctAnswerDiv.innerHTML = `<strong>Correct Order:</strong> ${letters.join(' → ')}`;
         } else if (isYesNoMatrix) {
             const statements = Array.isArray(question.statements) ? question.statements : [];
             const yn = (v) => v === 0 ? 'Yes' : 'No';
-            const rows = statements.map((s, i) => `<div class="yn-solution-row"><span class="yn-solution-label">${s}</span><span class="yn-solution-value">${yn(correctAnswer[i])}</span></div>`);
+            const rows = statements.map((s, i) => `<div class="yn-solution-row"><span class="yn-solution-label">${this.escapeHtml(s)}</span><span class="yn-solution-value">${yn(correctAnswer[i])}</span></div>`);
             correctAnswerDiv.innerHTML = `<strong>Correct Responses:</strong><div class="yn-solution">${rows.join('')}</div>`;
         } else if (isDragSelect || Array.isArray(correctAnswer)) {
-            const letters = correctAnswer.map(i => `${String.fromCharCode(65 + i)}. ${question.options[i]}`);
+            const letters = correctAnswer.map(i => `${String.fromCharCode(65 + i)}. ${this.escapeHtml(question.options[i])}`);
             correctAnswerDiv.innerHTML = `<strong>Correct Selection(s):</strong> ${letters.join(' | ')}`;
         } else {
-            correctAnswerDiv.innerHTML = `<strong>Correct Answer:</strong> ${String.fromCharCode(65 + correctAnswer)}. ${question.options[correctAnswer]}`;
+            correctAnswerDiv.innerHTML = `<strong>Correct Answer:</strong> ${String.fromCharCode(65 + correctAnswer)}. ${this.escapeHtml(question.options[correctAnswer])}`;
         }
         
         if (question.explanation) {
@@ -1204,15 +1364,29 @@ class MultiExamSimulator {
     }
 
     startTimer() {
-        const duration = this.examData[this.currentExam].duration * 60; // Convert to seconds
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+
+        const durationMinutes = Number(this.examData?.[this.currentExam]?.duration);
+        const safeMinutes = Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 45;
+        const duration = safeMinutes * 60; // Convert to seconds
         let remainingTime = duration;
-        
-        this.timer = setInterval(() => {
+
+        // Render immediately (avoids showing stale placeholder like 45:00)
+        const render = () => {
             const minutes = Math.floor(remainingTime / 60);
             const seconds = remainingTime % 60;
-            
-            document.getElementById('timer').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const el = document.getElementById('timer');
+            if (el) {
+                el.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        };
+        render();
+        
+        this.timer = setInterval(() => {
+            render();
             
             if (remainingTime <= 0) {
                 clearInterval(this.timer);
@@ -1542,7 +1716,7 @@ class MultiExamSimulator {
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Load saved theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -1552,6 +1726,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Ensure dynamic exams are loaded (server mode) before simulator instantiation.
+    if (window.examsLoadedPromise) {
+        try {
+            await window.examsLoadedPromise;
+        } catch (_) {
+            // ignore loader failures (file:// mode)
+        }
+    }
+
     // Initialize simulator
     window.examSimulator = new MultiExamSimulator();
 });

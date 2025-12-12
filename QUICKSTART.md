@@ -202,7 +202,7 @@ Click "Export Progress" to download:
 2. **Select exam** - Choose existing or create new
 3. **Add questions** - Click "Add Question"
 4. **Fill details** - Question text, options, correct answer, explanation
-5. **Add images** - Reference image files for questions/explanations
+5. **Add images (server mode)** - Upload/place images under `user-content/exams/<examId>/images/` and reference them in questions/explanations
 6. **Save** - Questions saved to localStorage automatically
 7. **Export** - Download as JSON to share
 

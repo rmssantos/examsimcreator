@@ -11,14 +11,14 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+  <div class="theme-controls">
+    <button class="theme-toggle" title="Toggle theme">
+      <i class="fas fa-moon theme-icon"></i>
+    </button>
+  </div>
   <div class="container">
     <!-- Minimal shell that only shows the exam UI -->
     <div id="exam-screen" class="screen active">
-      <div class="theme-controls">
-        <button class="theme-toggle" title="Toggle theme">
-          <i class="fas fa-moon theme-icon"></i>
-        </button>
-      </div>
       <div class="exam-header">
         <div class="exam-info-header">
           <span id="current-exam-badge" class="exam-badge">Exam</span>
@@ -34,7 +34,7 @@
         </div>
         <div class="exam-timer">
           <i class="fas fa-clock"></i>
-          <span id="timer">45:00</span>
+          <span id="timer">--:--</span>
         </div>
       </div>
 
@@ -84,11 +84,6 @@
     </div>
 
     <div id="results-screen" class="screen">
-      <div class="theme-controls">
-        <button class="theme-toggle" title="Toggle theme">
-          <i class="fas fa-moon theme-icon"></i>
-        </button>
-      </div>
       <div class="results-container">
         <div class="results-shell">
           <div class="results-layout">

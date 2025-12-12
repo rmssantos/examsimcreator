@@ -9,6 +9,9 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+import json
+import re
 
 PORT = 8000
 DIRECTORY = Path(__file__).parent
@@ -28,6 +31,57 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.end_headers()
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+
+        if parsed.path != '/__upload_images':
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(b'Not Found')
+            return
+
+        qs = parse_qs(parsed.query)
+        exam = (qs.get('exam', [''])[0] or '').strip()
+        name = (qs.get('name', [''])[0] or '').strip()
+
+        # Basic sanitization to avoid path traversal
+        if not exam or not re.fullmatch(r'[A-Za-z0-9_\-]+', exam):
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Invalid exam id'}).encode('utf-8'))
+            return
+
+        safe_name = os.path.basename(name)
+        if not safe_name:
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Invalid filename'}).encode('utf-8'))
+            return
+
+        content_length = int(self.headers.get('Content-Length') or 0)
+        data = self.rfile.read(content_length) if content_length > 0 else b''
+
+        dest_dir = DIRECTORY / 'user-content' / 'exams' / exam / 'images'
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_path = dest_dir / safe_name
+
+        try:
+            dest_path.write_bytes(data)
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
+            return
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(json.dumps({'filename': safe_name}).encode('utf-8'))
 
     def log_message(self, format, *args):
         # Custom log format
