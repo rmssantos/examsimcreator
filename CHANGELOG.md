@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2025-12-12
+
+### Fixed
+- Exam page theme toggle no longer shifts layout (single fixed toggle).
+- Exam timer display initializes cleanly and respects imported exam duration metadata.
+- Imported/runtime exams can start correctly in `exam.html` (awaits dynamic loader).
+- Reduced HTML injection risk when rendering imported content.
+- Image caching now isolates by exam to avoid cross-exam collisions.
+
+### Added
+- Local server endpoint for editor image uploads.
+
+### Documentation
+- Clarified that editor image upload/copy works in server mode and where images should live.
+
+### Removed
+- Ignored/deleted accidental root `dump.json`/`metadata.json` artifacts.
+
 ## [2.0.0] - 2025-01-13
 
 ### 🎉 Major Release - UI/UX Overhaul
