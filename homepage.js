@@ -812,9 +812,12 @@ this.showNotification(`✅ Exam "${examId}" imported successfully!`);
 }				findZipEntry(zip, pattern) {
 let match = null;
 zip.forEach((relativePath, entry) => {
-if (!entry.dir && pattern.test(relativePath)) {
-	if (!match || relativePath.length < match.name.length) {
+// Normalize backslashes to forward slashes (Windows ZIP compatibility)
+const normalized = relativePath.replace(/\\/g, '/');
+if (!entry.dir && pattern.test(normalized)) {
+	if (!match || normalized.length < (match._normalizedPath || match.name).length) {
 		match = entry;
+		match._normalizedPath = normalized;
 	}
 }
 });
@@ -824,7 +827,7 @@ return match;
 deriveExamIdFromZip(zip, fallbackName) {
 const rootFolders = new Set();
 zip.forEach((relativePath) => {
-const normalized = relativePath.replace(/^\/+/, '');
+const normalized = relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
 const [root] = normalized.split('/');
 if (root) {
 	rootFolders.add(root);
