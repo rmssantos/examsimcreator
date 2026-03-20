@@ -308,14 +308,19 @@ class ExamManager {
 
         // Check if questions have required fields
         return questions.every(q => {
-            if (
-                !q.hasOwnProperty('id') ||
-                !q.hasOwnProperty('question') ||
-                !Array.isArray(q.options) ||
-                !q.hasOwnProperty('correct')
-            ) {
+            if (!q.hasOwnProperty('id') || !q.hasOwnProperty('question') || !q.hasOwnProperty('correct')) {
                 return false;
             }
+
+            // YES_NO_MATRIX uses statements instead of options
+            if (q.question_type === 'YES_NO_MATRIX') {
+                return Array.isArray(q.statements) && Array.isArray(q.correct) &&
+                    q.statements.length === q.correct.length &&
+                    q.correct.every(c => c === 0 || c === 1);
+            }
+
+            // All other types require options
+            if (!Array.isArray(q.options)) return false;
 
             // Validate that correct index is within bounds of options
             if (Array.isArray(q.correct)) {
