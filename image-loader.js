@@ -1,14 +1,9 @@
 // Função para carregar e cachear imagens locais
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+// escapeHtml is now provided by utils.js
 
 class ImageLoader {
+    static MAX_CACHE_SIZE = 100;
+
     constructor() {
         this.baseUrl = './images/'; // Fallback para imagens antigas
         this.userContentBaseUrl = './user-content/exams/'; // Nova estrutura
@@ -41,6 +36,11 @@ class ImageLoader {
 
         try {
             const imagePath = await loadPromise;
+            // Evict oldest entry if cache is full
+            if (this.cache.size >= ImageLoader.MAX_CACHE_SIZE) {
+                const oldestKey = this.cache.keys().next().value;
+                this.cache.delete(oldestKey);
+            }
             this.cache.set(cacheKey, imagePath);
             this.loadingPromises.delete(cacheKey);
             return imagePath;
@@ -88,10 +88,10 @@ class ImageLoader {
                     const fallbackPath = this.baseUrl + filename;
                     const fallbackImg = new Image();
                     fallbackImg.onload = () => resolve(fallbackPath);
-                    fallbackImg.onerror = () => reject(new Error(`Imagem não encontrada: ${filename}`));
+                    fallbackImg.onerror = () => reject(new Error(`Image not found: ${filename}`));
                     fallbackImg.src = fallbackPath;
                 } else {
-                    reject(new Error(`Imagem não encontrada: ${filename}`));
+                    reject(new Error(`Image not found: ${filename}`));
                 }
             };
 
@@ -143,11 +143,11 @@ function renderQuestionImage(imageFilename, altText = '', className = 'question-
             placeholder.replaceWith(img);
         } catch (error) {
             console.warn(`Failed to load image: ${imageFilename}`, error);
-            placeholder.innerHTML = `<div class="image-error" style="color: #dc3545; text-align: center; padding: 20px; font-size: 14px;"><i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px;"></i><div>Imagem não disponível: ${escapeHtml(imageFilename)}</div></div>`;
+            placeholder.innerHTML = `<div class="image-error" style="color: #dc3545; text-align: center; padding: 20px; font-size: 14px;"><i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 8px;"></i><div>Image not available: ${escapeHtml(imageFilename)}</div></div>`;
         }
     }, 0);
 
-    return `<div id="${placeholderId}" class="image-placeholder"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><div>Carregando imagem...</div></div></div>`;
+    return `<div id="${placeholderId}" class="image-placeholder"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><div>Loading image...</div></div></div>`;
 }
 
 // Função para processar texto da questão e renderizar imagens
@@ -161,7 +161,9 @@ function processQuestionContent(content) {
 }
 
 // Inicializar o carregador de imagens
-window.imageLoader = new ImageLoader();
+window.ExamApp = window.ExamApp || {};
+window.ExamApp.imageLoader = new ImageLoader();
+window.imageLoader = window.ExamApp.imageLoader; // backwards compat
 
 // CSS para os componentes de imagem
 const imageStyles = `
@@ -225,27 +227,9 @@ if (document.head) {
     document.head.insertAdjacentHTML('beforeend', imageStyles);
 }
 
-// Lista das imagens mais comuns do exame para pré-carregamento
-const COMMON_EXAM_IMAGES = [
-    '19601894-47fa-46fd-8628-00a836341cc5.jpg',
-    '27b5c25c-f806-471f-ad25-c25850e9b842.jpg',
-    '7411cdbf-8752-4aeb-954e-9dafb879ec3d.jpg',
-    '6f222c79-9af1-491b-b912-171624dcada2.jpg',
-    'e0a5954b-0869-45b4-84ba-5df92ce54baf.jpg',
-    '042e16b6-a12f-4a4e-9614-4fdb042025f6.jpg'
-];
-
 // Função para inicializar o sistema de imagens
 async function initializeImageSystem() {
     console.log('✓ Sistema de imagens inicializado (modo local)');
-    
-    // Testar carregamento de uma imagem
-    const testImage = '19601894-47fa-46fd-8628-00a836341cc5.jpg';
-    const img = new Image();
-    img.onload = () => console.log('✓ Imagens carregando corretamente');
-    img.onerror = () => console.warn('⚠ Algumas imagens podem não estar disponíveis');
-    img.src = `./images/${testImage}`;
-    
     return Promise.resolve();
 }
 
@@ -273,8 +257,18 @@ async function getImageStorageStats() {
 
 // Exportar funções
 window.ImageLoader = ImageLoader;
-window.renderQuestionImage = renderQuestionImage;
-window.processQuestionContent = processQuestionContent;
-window.initializeImageSystem = initializeImageSystem;
-window.clearExamImages = clearExamImages;
-window.getImageStorageStats = getImageStorageStats;
+
+window.ExamApp.renderQuestionImage = renderQuestionImage;
+window.renderQuestionImage = window.ExamApp.renderQuestionImage; // backwards compat
+
+window.ExamApp.processQuestionContent = processQuestionContent;
+window.processQuestionContent = window.ExamApp.processQuestionContent; // backwards compat
+
+window.ExamApp.initializeImageSystem = initializeImageSystem;
+window.initializeImageSystem = window.ExamApp.initializeImageSystem; // backwards compat
+
+window.ExamApp.clearExamImages = clearExamImages;
+window.clearExamImages = window.ExamApp.clearExamImages; // backwards compat
+
+window.ExamApp.getImageStorageStats = getImageStorageStats;
+window.getImageStorageStats = window.ExamApp.getImageStorageStats; // backwards compat

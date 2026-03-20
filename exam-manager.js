@@ -182,11 +182,12 @@ class ExamManager {
     getCustomExamsFromStorage() {
         const customExams = [];
         try {
-            for (let i = 0; i < localStorage.length; i++) {
+            const len = localStorage.length;
+            for (let i = 0; i < len; i++) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('custom_') && key.endsWith('_questions')) {
                     const examId = key.replace('custom_', '').replace('_questions', '');
-                    if (examId && examId !== 'ai900' && examId !== 'ai102') {
+                    if (examId) {
                         customExams.push(examId);
                     }
                 }
@@ -205,25 +206,9 @@ class ExamManager {
         // Try to guess exam type from ID
         let metadata = { ...this.defaultExamInfo };
 
-        if (examId.includes('900')) {
-            metadata.name = 'AI-900';
-            metadata.fullName = 'Azure AI Fundamentals';
-            metadata.badge = 'Fundamentals';
-            metadata.icon = 'fas fa-brain';
-            metadata.duration = 45;
-            metadata.passScore = 75;
-        } else if (examId.includes('102')) {
-            metadata.name = 'AI-102';
-            metadata.fullName = 'Azure AI Engineer Associate';
-            metadata.badge = 'Associate';
-            metadata.icon = 'fas fa-robot';
-            metadata.duration = 150;
-            metadata.passScore = 70;
-        } else {
-            metadata.name = examId.toUpperCase();
-            metadata.fullName = `Custom Exam: ${examId}`;
-            metadata.badge = 'Custom';
-        }
+        metadata.name = examId.toUpperCase();
+        metadata.fullName = `Exam: ${examId}`;
+        metadata.badge = 'Exam';
 
         metadata.questionCount = Math.min(questionCount, 45); // Limit to 45 for exam
         metadata.totalQuestions = questionCount;
@@ -251,21 +236,6 @@ class ExamManager {
             q.question.includes('![') || // Markdown images
             q.explanation?.includes('![')
         );
-    }
-
-    // Get all available exams
-    getAvailableExams() {
-        return this.availableExams;
-    }
-
-    // Get specific exam
-    getExam(examId) {
-        return this.availableExams.get(examId);
-    }
-
-    // Check if exam exists
-    hasExam(examId) {
-        return this.availableExams.has(examId);
     }
 
     // Import exam from file/data (supports both array and object formats)
@@ -337,12 +307,23 @@ class ExamManager {
         }
 
         // Check if questions have required fields
-        return questions.every(q =>
-            q.hasOwnProperty('id') &&
-            q.hasOwnProperty('question') &&
-            Array.isArray(q.options) &&
-            q.hasOwnProperty('correct')
-        );
+        return questions.every(q => {
+            if (
+                !q.hasOwnProperty('id') ||
+                !q.hasOwnProperty('question') ||
+                !Array.isArray(q.options) ||
+                !q.hasOwnProperty('correct')
+            ) {
+                return false;
+            }
+
+            // Validate that correct index is within bounds of options
+            if (Array.isArray(q.correct)) {
+                return q.correct.every(i => Number.isInteger(i) && i >= 0 && i < q.options.length);
+            } else {
+                return Number.isInteger(q.correct) && q.correct >= 0 && q.correct < q.options.length;
+            }
+        });
     }
 
     // Delete exam
@@ -358,24 +339,9 @@ class ExamManager {
         }
     }
 
-    // Export exam for sharing
-    exportExam(examId) {
-        const exam = this.getExam(examId);
-        if (!exam) {
-            throw new Error(`Exam ${examId} not found`);
-        }
-
-        const exportData = {
-            id: examId,
-            metadata: exam.metadata,
-            questions: exam.questions,
-            exportDate: new Date().toISOString(),
-            version: '1.0'
-        };
-
-        return exportData;
-    }
 }
 
 // Global instance
-window.examManager = new ExamManager();
+window.ExamApp = window.ExamApp || {};
+window.ExamApp.examManager = new ExamManager();
+window.examManager = window.ExamApp.examManager; // backwards compat

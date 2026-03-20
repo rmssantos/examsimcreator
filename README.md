@@ -11,14 +11,14 @@
 
 **This exam simulator is provided solely as a study aid and practice tool.**
 
-- ❌ **Not affiliated with** Microsoft, Azure, or any certification authority
+- ❌ **Not affiliated with** any certification authority or vendor
 - 📚 **Educational purposes only** - for personal study and practice
 - ⚡ **Exam content subject to change** - official exams are regularly updated
 - ✅ **No guarantees** - this tool does not guarantee exam success
 - 📖 **Always refer to official documentation** for authoritative certification information
 - ⚖️ **User responsibility** - ensure imported content complies with applicable terms of service
 
-> Use this simulator to practice exam-taking skills, time management, and knowledge retention. Always supplement with official Microsoft Learn paths and documentation.
+> Use this simulator to practice exam-taking skills, time management, and knowledge retention. Always supplement with official study resources and documentation.
 
 ---
 
@@ -43,12 +43,12 @@ The **Exam Simulator** is a self-contained, browser-based exam practice platform
 ### ⚠️ Content Safety & Licensing
 
 - **No official dumps are stored in this repo.** The portable folder is safe to make public because it only ships the simulator code, docs, and empty drop-zones.
-- **AI-900/AI-102 (and any other licensed content) must live in a private location** (private Git repo, encrypted drive, SharePoint, etc.). Drag/drop or copy them locally when you study.
+- **Licensed exam content must live in a private location** (private Git repo, encrypted drive, SharePoint, etc.). Drag/drop or copy them locally when you study.
 - **Recommended workflow:**
   1. Keep this sanitized repo public for the simulator.
-  2. Maintain a private repo or storage bucket that contains your proprietary exam packs (e.g., `ai900-exam-pack.zip`).
+  2. Maintain a private repo or storage bucket that contains your proprietary exam packs (e.g., `my-exam-pack.zip`).
   3. When teammates need the full kit, give them (a) the public simulator zip and (b) secure links to the private exam packs.
-- `.gitignore` already blocks `user-content/ai900*`, `user-content/ai102*`, and all `images/` assets so sensitive files can’t be re-committed by accident.
+- `.gitignore` already blocks `user-content/exams/*` and all `images/` assets so sensitive files can’t be re-committed by accident.
 
 ---
 
@@ -336,7 +336,7 @@ localStorage['exam_activation_config'];
 localStorage['theme'];
 ```
 
-> Example IDs such as `ai900` or `ai102` are commonly used internally but the actual dumps are **not** shipped in this repo—store them privately and import them at runtime.
+> Exam IDs are user-defined. The actual exam content is **not** shipped in this repo -- store it privately and import it at runtime.
 
 ---
 
@@ -452,15 +452,15 @@ localStorage['theme'];
   {
     "id": 1,
     "module": "AI_WORKLOADS",
-    "question": "What is Azure Cognitive Services?",
+    "question": "What is the primary purpose of unit testing?",
     "options": [
-      "A cloud-based AI service",
-      "A database service",
-      "A networking service",
-      "A storage service"
+      "To verify individual components work correctly",
+      "To test the entire system end-to-end",
+      "To measure performance under load",
+      "To validate user interface design"
     ],
     "correct": 0,
-    "explanation": "Azure Cognitive Services provides AI capabilities...",
+    "explanation": "Unit testing focuses on verifying that individual components or functions work correctly in isolation.",
     "question_type": "STANDARD",
     "question_images": [
       {"filename": "diagram1.jpg"}
@@ -476,9 +476,9 @@ localStorage['theme'];
 
 ```json
 {
-  "id": "ai900",
-  "name": "AI-900",
-  "fullName": "Azure AI Fundamentals",
+  "id": "myexam",
+  "name": "MY-EXAM",
+  "fullName": "My Practice Exam",
   "duration": 45,
   "questionCount": 45,
   "totalQuestions": 137,
@@ -525,7 +525,7 @@ exam-pack/
     └── (image files)
 
 # Package as ZIP
-zip -r ai900-exam-pack.zip dump.json metadata.json images/
+zip -r my-exam-pack.zip dump.json metadata.json images/
 ```
 
 **See [HOW-TO-DISTRIBUTE.md](./HOW-TO-DISTRIBUTE.md) for detailed distribution guide.**

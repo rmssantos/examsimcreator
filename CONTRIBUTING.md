@@ -1,4 +1,4 @@
-# Contributing to Azure AI Exam Simulator
+# Contributing to Exam Simulator
 
 Thank you for your interest in contributing! This document provides guidelines and instructions for contributing to the project.
 
@@ -51,14 +51,14 @@ Question images don't appear when running exam in Safari 14.
 
 **Steps to reproduce:**
 1. Open exam.html in Safari 14
-2. Start AI-900 exam
+2. Start an exam
 3. Navigate to question with image
 
 **Expected:** Image displays
 **Actual:** Placeholder shown
 
 **Console errors:**
-Failed to load resource: user-content/exams/ai900/images/diagram.jpg
+Failed to load resource: user-content/exams/myexam/images/diagram.jpg
 
 **Browser:** Safari 14.0.3
 **OS:** macOS 11.2
@@ -169,8 +169,7 @@ portable/
 │
 ├── user-content/
 │   └── exams/              # User exam data
-│       ├── ai900/
-│       └── ai102/
+│       └── <exam-id>/        # e.g., myexam/
 │
 └── docs/                   # Documentation
 ```
@@ -355,8 +354,8 @@ Before submitting a PR, test:
 1. Open browser DevTools (F12)
 2. Go to Application → Local Storage
 3. Verify keys exist:
-   - custom_ai900_questions
-   - exam_metadata_ai900
+   - custom_<examId>_questions
+   - exam_metadata_<examId>
    - examHistory
 4. Test clearing storage
 5. Verify data reloads correctly

@@ -1,8 +1,8 @@
 # Exam Import Guide
 
-This guide explains how to import exam packs into the Azure AI Exam Simulator.
+This guide explains how to import exam packs into the Exam Simulator.
 
-> ⚠️ **Important:** The public repo never ships official exam dumps (AI-900, AI-102, etc.). Keep those files in private storage and copy/import them locally when running the simulator.
+> ⚠️ **Important:** The public repo never ships proprietary exam content. Keep exam files in private storage and copy/import them locally when running the simulator.
 
 ## Supported Formats
 
@@ -13,8 +13,8 @@ The simulator accepts exam data in JSON format with the following structure:
 {
   "id": "exam-id",
   "metadata": {
-    "name": "AI-900",
-    "fullName": "Azure AI Fundamentals",
+    "name": "MY-EXAM",
+    "fullName": "My Practice Exam",
     "duration": 45,
     "questionCount": 45,
     "passScore": 75,
@@ -25,7 +25,7 @@ The simulator accepts exam data in JSON format with the following structure:
     {
       "id": 1,
       "module": "AI_WORKLOADS",
-      "question": "What is Azure AI?",
+      "question": "What is the correct answer?",
       "options": [
         "Option A",
         "Option B",
@@ -159,8 +159,8 @@ The simulator validates imported exams for:
 
 ## Best Practices
 
-1. **Use descriptive exam IDs**: `ai900-practice`, `ai102-advanced`
-2. **Organize images by exam**: `ai900/question1.jpg`
+1. **Use descriptive exam IDs**: `math-practice`, `history-advanced`
+2. **Organize images by exam**: `myexam/question1.jpg`
 3. **Include metadata**: Helps with proper display
 4. **Test small first**: Import a few questions to test format
 5. **Backup your data**: Keep original files safe

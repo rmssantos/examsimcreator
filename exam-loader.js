@@ -10,37 +10,55 @@
  */
 
 // Initialize user exams container
-window.userExams = window.userExams || {};
+window.ExamApp = window.ExamApp || {};
+window.ExamApp.userExams = window.ExamApp.userExams || {};
+window.userExams = window.ExamApp.userExams; // backwards compat
 
 // Main loader function
-window.loadAllExams = async function() {
+window.ExamApp.loadAllExams = async function() {
     console.log('🔍 Discovering exams...');
 
     // Try to discover exam directories automatically
     let examDirs = [];
 
     try {
-        const response = await fetch('user-content/exams/');
-        if (response.ok) {
-            const text = await response.text();
-            // Parse directory listing
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-            const links = doc.querySelectorAll('a');
-            examDirs = Array.from(links)
-                .map(a => {
-                    const href = a.getAttribute('href');
-                    if (!href) return null;
-                    // Extract directory name (remove trailing slash)
-                    const match = href.match(/([^\/]+)\/?$/);
-                    return match ? match[1] : null;
-                })
-                .filter(name => name && name !== '..' && !name.includes('.') && name !== 'exams');
-
-            console.log('✓ Auto-discovered exam directories:', examDirs);
+        // Try JSON index first (if server provides one)
+        const indexResponse = await fetch('user-content/exams/index.json');
+        if (indexResponse.ok) {
+            const examList = await indexResponse.json();
+            if (Array.isArray(examList)) {
+                examDirs = examList;
+                console.log('✓ Loaded exam list from index.json:', examDirs);
+            }
         }
     } catch (e) {
-        console.log('⚠️  Auto-discovery not available, will check localStorage only');
+        // index.json not available, fall through
+    }
+
+    if (examDirs.length === 0) {
+        try {
+            // Fallback: try to parse directory listing HTML
+            const response = await fetch('user-content/exams/');
+            if (response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const links = doc.querySelectorAll('a');
+                const dirs = [];
+                links.forEach(link => {
+                    const name = link.textContent.trim().replace(/\/$/, '');
+                    if (name && name !== '..' && name !== '.' && !name.includes('.') && name.length > 0) {
+                        dirs.push(name);
+                    }
+                });
+                examDirs = dirs;
+                if (examDirs.length > 0) {
+                    console.log('✓ Auto-discovered exam directories:', examDirs);
+                }
+            }
+        } catch (e) {
+            console.log('Directory listing not available, using localStorage exams only');
+        }
     }
 
     // Load each exam from dump.json
@@ -88,7 +106,8 @@ window.loadAllExams = async function() {
 
     // Also check localStorage for imported exams
     console.log('🔍 Checking localStorage for imported exams...');
-    for (let i = 0; i < localStorage.length; i++) {
+    const len = localStorage.length;
+    for (let i = 0; i < len; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('custom_') && key.endsWith('_questions')) {
             const examId = key.replace('custom_', '').replace('_questions', '');
@@ -96,9 +115,8 @@ window.loadAllExams = async function() {
                 try {
                     const questions = JSON.parse(localStorage.getItem(key));
                     const metadataKey = `exam_metadata_${examId}`;
-                    const metadata = localStorage.getItem(metadataKey)
-                        ? JSON.parse(localStorage.getItem(metadataKey))
-                        : null;
+                    const metadataRaw = localStorage.getItem(metadataKey);
+                    const metadata = metadataRaw ? JSON.parse(metadataRaw) : null;
 
                     window.userExams[examId] = {
                         questions: questions,
@@ -115,6 +133,8 @@ window.loadAllExams = async function() {
     console.log('✅ All exams loaded:', Object.keys(window.userExams));
     return window.userExams;
 };
+window.loadAllExams = window.ExamApp.loadAllExams; // backwards compat
 
 // Export as a promise for async/await usage
-window.examsLoadedPromise = window.loadAllExams();
+window.ExamApp.examsLoadedPromise = window.ExamApp.loadAllExams();
+window.examsLoadedPromise = window.ExamApp.examsLoadedPromise; // backwards compat

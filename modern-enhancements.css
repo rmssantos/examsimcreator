@@ -17,8 +17,9 @@ body {
         #134e8e 50%,
         #0f4c81 75%,
         #1e3c72 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
+    background-size: 200% 200%;
+    animation: gradientShift 60s ease infinite;
+    will-change: background-position;
 }
 
 .dark-mode body,
@@ -29,8 +30,9 @@ body.dark-mode {
         #2c5364 50%,
         #0f2027 75%,
         #203a43 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
+    background-size: 200% 200%;
+    animation: gradientShift 60s ease infinite;
+    will-change: background-position;
 }
 
 @keyframes gradientShift {
@@ -107,17 +109,11 @@ body.dark-mode {
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Subtle Glow Effect */
+/* Subtle Glow Effect — animation removed to reduce unnecessary CPU work */
 .logo h1 {
     text-shadow:
         0 0 10px rgba(30, 60, 114, 0.3),
         0 0 20px rgba(30, 60, 114, 0.2);
-    animation: subtleGlow 3s ease-in-out infinite;
-}
-
-@keyframes subtleGlow {
-    0%, 100% { text-shadow: 0 0 10px rgba(30, 60, 114, 0.3); }
-    50% { text-shadow: 0 0 15px rgba(30, 60, 114, 0.5), 0 0 25px rgba(30, 60, 114, 0.3); }
 }
 
 /* Enhanced Info Cards with 3D effect */
@@ -214,46 +210,7 @@ body.dark-mode {
     transition: 0s;
 }
 
-/* Enhanced Options */
-.option label {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.85));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.option label:hover {
-    transform: translateX(5px) translateY(-3px);
-    box-shadow: 0 15px 40px rgba(0, 102, 204, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.option input[type="radio"]:checked + label,
-.option input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-    border-color: #1e3c72;
-    border-width: 3px;
-    box-shadow: 0 15px 40px rgba(30, 60, 114, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transform: translateX(5px) scale(1.02);
-    color: #0d47a1;
-    font-weight: 600;
-}
-
-/* Exam Header Enhancement */
-.exam-header {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.98),
-        rgba(248, 249, 250, 0.98));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    border-bottom: 2px solid rgba(30, 60, 114, 0.15);
-}
+/* .option label — authoritative version in exam-enhancements.css */
 
 /* Progress Bar Glow */
 .progress-fill {
@@ -312,9 +269,19 @@ body.dark-mode {
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
 
+[data-theme="dark"] .theme-toggle,
 .dark-mode .theme-toggle {
-    background: rgba(45, 55, 72, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+[data-theme="dark"] .theme-toggle:hover,
+.dark-mode .theme-toggle:hover {
+    background: rgba(51, 65, 85, 0.95);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Smooth scrollbar */
@@ -372,7 +339,6 @@ body.dark-mode {
 /* Enhanced Shadows */
 .card,
 .info-card,
-.option label,
 .stat-card-modern {
     box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.05),
@@ -382,11 +348,6 @@ body.dark-mode {
 }
 
 /* Dark mode adjustments */
-.dark-mode .option label {
-    background: linear-gradient(135deg, rgba(73, 80, 87, 0.95), rgba(108, 117, 125, 0.85));
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    color: #e0e0e0;
-}
 
 .dark-mode .stat-card-modern {
     background: rgba(45, 55, 72, 0.95);
@@ -405,14 +366,6 @@ body.dark-mode {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
     20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-
-.option.correct-option label {
-    animation: successBounce 0.6s ease-out;
-}
-
-.option.incorrect-option label {
-    animation: errorShake 0.6s ease-out;
 }
 
 /* ===== SEQUENCE QUESTIONS - SINGLE COLUMN REORDERABLE ===== */
@@ -561,94 +514,9 @@ body.dark-mode {
     color: #212529 !important;
 }
 
-/* ===== DARK MODE TEXT COLORS - PÁGINA PRINCIPAL ===== */
-.dark-mode h1,
-.dark-mode h2,
-.dark-mode h3,
-.dark-mode h4,
-.dark-mode p,
-.dark-mode span:not(.exam-stat-number):not(.exam-stat-label):not(.btn-title):not(.btn-subtitle) {
-    color: #e0e0e0 !important;
-}
+/* Dark mode text colors removed — were causing bugs by force-overriding text colors via !important */
 
-.dark-mode .hero h1,
-.dark-mode .hero h2,
-.dark-mode .hero p {
-    color: #e0e0e0 !important;
-}
-
-.dark-mode .feature-item,
-.dark-mode .feature-item span {
-    color: #e0e0e0 !important;
-}
-
-.dark-mode .progress-label,
-.dark-mode .progress-value {
-    color: #e0e0e0 !important;
-}
-
-.dark-mode .exam-info h3 {
-    color: #e0e0e0 !important;
-}
-
-.dark-mode .info-card small {
-    color: #a0a0a0 !important;
-}
-
-.dark-mode .modules-list li,
-.dark-mode .resources-section,
-.dark-mode .resources-section p {
-    color: #d0d0d0 !important;
-}
-
-.dark-mode .question-text,
-.dark-mode .question-number {
-    color: #e0e0e0 !important;
-}
-
-/* ===== FEEDBACK VISUAL RESPOSTA CORRETA/INCORRETA ===== */
-/* Quando acerta - toda a barra fica verde */
-.option.correct-answer input[type="radio"]:checked + label,
-.option.correct-answer input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb) !important;
-    border-color: #28a745 !important;
-    border-width: 3px !important;
-    color: #155724 !important;
-    box-shadow: 0 15px 40px rgba(40, 167, 69, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-    animation: successBounce 0.6s ease-out;
-}
-
-/* Quando erra - toda a barra fica vermelha */
-.option.incorrect-answer input[type="radio"]:checked + label,
-.option.incorrect-answer input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #f8d7da, #f5c6cb) !important;
-    border-color: #dc3545 !important;
-    border-width: 3px !important;
-    color: #721c24 !important;
-    box-shadow: 0 15px 40px rgba(220, 53, 69, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-    animation: errorShake 0.6s ease-out;
-}
-
-/* Dark mode para feedback de respostas */
-.dark-mode .option.correct-answer input[type="radio"]:checked + label,
-.dark-mode .option.correct-answer input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #155724, #1e7e34) !important;
-    border-color: #28a745 !important;
-    color: #c3e6cb !important;
-    box-shadow: 0 15px 40px rgba(40, 167, 69, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-}
-
-.dark-mode .option.incorrect-answer input[type="radio"]:checked + label,
-.dark-mode .option.incorrect-answer input[type="checkbox"]:checked + label {
-    background: linear-gradient(135deg, #721c24, #a71d2a) !important;
-    border-color: #dc3545 !important;
-    color: #f5c6cb !important;
-    box-shadow: 0 15px 40px rgba(220, 53, 69, 0.6),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-}
+/* Answer-state feedback rules removed — authoritative versions in exam-enhancements.css */
 
 /* ===== EDITOR ENHANCEMENTS ===== */
 .editor-container {
@@ -1016,4 +884,12 @@ body.dark-mode {
 
 .editor-theme-toggle:hover {
     transform: scale(1.1) rotate(15deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

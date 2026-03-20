@@ -2,9 +2,6 @@
 
 /* Typography System */
 :root {
-	--font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-	--font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
 	/* Font Sizes - Reduced */
 	--fs-hero-title: 1.75rem;
 	--fs-hero-subtitle: 1rem;
@@ -1333,8 +1330,6 @@ body.dragging-file #compact-import-btn.drag-over .exam-icon {
 	opacity: 1;
 }
 
-.exam-card.ai900 { background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.08)); }
-.exam-card.ai102 { background: linear-gradient(135deg, rgba(240, 147, 251, 0.15), rgba(245, 87, 108, 0.08)); }
 .exam-card.custom { background: linear-gradient(135deg, rgba(32, 201, 151, 0.15), rgba(17, 153, 142, 0.08)); }
 
 .exam-card .exam-badge {
@@ -1896,6 +1891,51 @@ body.dragging-file .drop-zone-simple.drag-over,
 	border-color: rgba(255, 255, 255, 0.15);
 }
 
+/* ===== Dark Mode: Empty State & Drop Zone ===== */
+[data-theme="dark"] .no-exams-section,
+.dark-mode .no-exams-section {
+	background: rgba(20, 27, 45, 0.6);
+	border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .empty-icon,
+.dark-mode .empty-icon {
+	color: rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="dark"] .empty-state h3,
+.dark-mode .empty-state h3 {
+	color: #e2e8f0;
+}
+
+[data-theme="dark"] .empty-state p,
+.dark-mode .empty-state p {
+	color: #94a3b8;
+}
+
+[data-theme="dark"] .drop-zone-simple,
+.dark-mode .drop-zone-simple {
+	background: rgba(30, 41, 59, 0.8);
+	border-color: rgba(99, 102, 241, 0.25);
+}
+
+[data-theme="dark"] .drop-zone-simple:hover,
+.dark-mode .drop-zone-simple:hover {
+	background: rgba(30, 41, 59, 1);
+	border-color: var(--primary);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .drop-zone-simple p,
+.dark-mode .drop-zone-simple p {
+	color: #94a3b8;
+}
+
+[data-theme="dark"] .drop-icon,
+.dark-mode .drop-icon {
+	color: rgba(99, 102, 241, 0.5);
+}
+
 @media (max-width: 768px) {
 	.hero-actions {
 		flex-direction: column;
@@ -2440,4 +2480,12 @@ body.dragging-file .drop-zone-simple.drag-over,
 	.progress-value {
 		font-size: 1.75rem;
 	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

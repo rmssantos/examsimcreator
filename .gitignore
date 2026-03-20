@@ -35,10 +35,7 @@ user-content/exams/*
 !user-content/exams/README.md
 
 # Private exam backups/zips (keep local only)
-user-content/ai900*/
-user-content/ai102*/
-user-content/ai900*.zip
-user-content/ai102*.zip
+user-content/*.zip
 
 # Exam media lives locally only
 images/*
@@ -68,3 +65,6 @@ coverage/
 # Local configuration
 config.local.js
 settings.local.json
+
+
+.local/

@@ -3,8 +3,7 @@
 Generate exam-data.js from dump.json and metadata.json
 
 Usage:
-    python generate-exam-data-js.py ai102
-    python generate-exam-data-js.py ai900
+    python generate-exam-data-js.py <exam_id>
 """
 
 import json
@@ -86,53 +85,24 @@ def generate_default_metadata(exam_id, questions):
     )
 
     # Default metadata based on exam_id
-    if 'ai900' in exam_id.lower():
-        return {
-            "id": exam_id,
-            "name": "AI-900",
-            "fullName": "Azure AI Fundamentals",
-            "duration": 45,
-            "questionCount": 45,
-            "totalQuestions": len(questions),
-            "passScore": 75,
-            "badge": "Fundamentals",
-            "icon": "fas fa-brain",
-            "modules": modules or ["AI_WORKLOADS", "MACHINE_LEARNING", "COMPUTER_VISION", "NLP", "GENERATIVE_AI"],
-            "hasImages": has_images
-        }
-    elif 'ai102' in exam_id.lower():
-        return {
-            "id": exam_id,
-            "name": "AI-102",
-            "fullName": "Azure AI Engineer Associate",
-            "duration": 150,
-            "questionCount": 45,
-            "totalQuestions": len(questions),
-            "passScore": 70,
-            "badge": "Associate",
-            "icon": "fas fa-robot",
-            "modules": modules or ["COMPUTER_VISION", "NLP", "KNOWLEDGE_MINING", "CONVERSATIONAL_AI", "GENERATIVE_AI"],
-            "hasImages": has_images
-        }
-    else:
-        return {
-            "id": exam_id,
-            "name": exam_id.upper(),
-            "fullName": f"Custom Exam: {exam_id}",
-            "duration": 60,
-            "questionCount": min(45, len(questions)),
-            "totalQuestions": len(questions),
-            "passScore": 70,
-            "badge": "Custom",
-            "icon": "fas fa-book",
-            "modules": modules or ["GENERAL"],
-            "hasImages": has_images
-        }
+    return {
+        "id": exam_id,
+        "name": exam_id.upper(),
+        "fullName": f"Exam: {exam_id}",
+        "duration": 60,
+        "questionCount": min(45, len(questions)),
+        "totalQuestions": len(questions),
+        "passScore": 70,
+        "badge": "Exam",
+        "icon": "fas fa-book",
+        "modules": modules or ["GENERAL"],
+        "hasImages": has_images
+    }
 
 def main():
     if len(sys.argv) < 2:
         print("Usage: python generate-exam-data-js.py <exam_id>")
-        print("Example: python generate-exam-data-js.py ai102")
+        print("Example: python generate-exam-data-js.py myexam")
         sys.exit(1)
 
     exam_id = sys.argv[1]

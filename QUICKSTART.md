@@ -1,12 +1,12 @@
 # Quick Start Guide
 
-Get up and running with the Azure AI Exam Simulator in under 5 minutes.
+Get up and running with the Exam Simulator in under 5 minutes.
 
 ---
 
 ## ⚠️ Important Notice
 
-**Educational Tool Only:** This simulator is for study and practice purposes. It is not affiliated with Microsoft or any certification authority. Official exam content and requirements may change. Always refer to official Microsoft certification documentation.
+**Educational Tool Only:** This simulator is for study and practice purposes. It is not affiliated with any certification authority or vendor. Official exam content and requirements may change. Always refer to official certification documentation.
 
 ---
 

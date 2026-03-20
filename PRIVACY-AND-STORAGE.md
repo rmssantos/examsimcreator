@@ -5,7 +5,7 @@
 ### TL;DR
 **ALL user data is stored ONLY in the user's browser `localStorage`. Nothing is sent to the server. Each user's data is completely isolated and private.**
 
-> ⚠️ **Content policy:** The public repo never ships proprietary exam dumps (AI-900, AI-102, etc.). Keep those packs in private storage and only copy them locally when you need them.
+> ⚠️ **Content policy:** The public repo never ships proprietary exam content. Keep exam packs in private storage and only copy them locally when you need them.
 
 ---
 

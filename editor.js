@@ -4,12 +4,23 @@
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
-  const escapeHtml = (value) => String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  function debounce(fn, ms) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), ms);
+    };
+  }
+
+  // escapeHtml is provided globally by utils.js; keep a local alias for safety
+  const escapeHtml = window.escapeHtml || function(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
 
   // Load master data from window.userExams or examManager
   function loadMaster(exam){
@@ -29,15 +40,6 @@
       }
     }
 
-    // Fallback to old system for backwards compatibility
-    if (exam === 'ai900') {
-      if (Array.isArray(window.ai900Dump)) return deepClone(window.ai900Dump);
-      if (typeof getAllQuestions === 'function') return deepClone(getAllQuestions());
-    } else if (exam === 'ai102') {
-      if (window.ai102Questions && typeof window.ai102Questions.getAllQuestions === 'function') {
-        return deepClone(window.ai102Questions.getAllQuestions());
-      }
-    }
     return [];
   }
 
@@ -96,7 +98,7 @@
   }
 
   let state = {
-    exam: 'ai900',
+    exam: '',
     customCode: null, // when exam === 'custom', holds code for exam-dumps/<code>.json and localStorage keys
     items: [],
     filtered: [],
@@ -117,6 +119,7 @@
     state.filtered.sort(idSort).forEach((q, i) => {
       const div = document.createElement('div');
       div.className = 'list-item' + (i === state.currentIndex ? ' active' : '');
+      div.setAttribute('data-index', i);
       const title = (q.question || '').replace(/\n/g,' ').slice(0,120);
       // Determine type: special types via question_type; else MULTI if correct is an array, otherwise STANDARD
       const type = q.question_type || (Array.isArray(q.correct) ? 'MULTI' : 'STANDARD');
@@ -130,10 +133,25 @@
 
       div.appendChild(meta);
       div.appendChild(titleDiv);
-      div.addEventListener('click', ()=>{ state.currentIndex = i; renderForm(); renderList(); });
       list.appendChild(div);
     });
   }
+
+  // Delegated click listener for question list
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('questionList');
+    if (list) {
+      list.addEventListener('click', (e) => {
+        const item = e.target.closest('.list-item');
+        if (!item) return;
+        const index = parseInt(item.getAttribute('data-index'), 10);
+        if (isNaN(index)) return;
+        state.currentIndex = index;
+        renderForm();
+        renderList();
+      });
+    }
+  });
 
   function ensureFields(q){
     q.options = Array.isArray(q.options) ? q.options : [];
@@ -245,78 +263,89 @@
     // Update UI hints for current type
     updateUIHints(type);
 
-    // Bind option events
-    if (type === 'YES_NO_MATRIX') {
-      // YES_NO_MATRIX: statements text and radio buttons
-      $$('.stmt-text').forEach(inp => {
-        inp.addEventListener('input', (e)=>{
-          const i = Number(e.target.getAttribute('data-idx'));
-          if (!Array.isArray(q.statements)) q.statements = [];
-          q.statements[i] = e.target.value;
-          renderPreview(q);
-        });
+    // Event delegation on options container (attached once, not per render)
+    if (optWrap && !optWrap._delegated) {
+      optWrap._delegated = true;
+
+      optWrap.addEventListener('input', (e) => {
+        const curQ = state.filtered[state.currentIndex];
+        if (!curQ) return;
+        const idx = Number(e.target.getAttribute('data-idx'));
+        if (isNaN(idx)) return;
+
+        if (e.target.classList.contains('opt-text')) {
+          curQ.options[idx] = e.target.value;
+          syncFromForm();
+          renderPreview(curQ);
+          markUnsaved();
+        } else if (e.target.classList.contains('stmt-text')) {
+          if (!Array.isArray(curQ.statements)) curQ.statements = [];
+          curQ.statements[idx] = e.target.value;
+          syncFromForm();
+          renderPreview(curQ);
+          markUnsaved();
+        }
       });
-      $$('.yn-correct').forEach(radio => {
-        radio.addEventListener('change', ()=>{
-          const idx = Number(radio.getAttribute('data-idx'));
-          const val = Number(radio.value); // 0=Yes, 1=No
-          if (!Array.isArray(q.correct)) q.correct = [];
-          q.correct[idx] = val;
-          $('#qCorrect').value = q.correct.join(',');
-          renderPreview(q);
-        });
-      });
-      $$('.opt-del').forEach(btn => {
-        btn.addEventListener('click', ()=>{
-          const idx = Number(btn.getAttribute('data-idx'));
-          if (Array.isArray(q.statements)) q.statements.splice(idx,1);
-          if (Array.isArray(q.correct)) q.correct.splice(idx,1);
-          renderForm();
-        });
-      });
-    } else {
-      // Regular options
-      $$('.opt-text').forEach(inp => {
-        inp.addEventListener('input', (e)=>{
-          const i = Number(e.target.getAttribute('data-idx'));
-          q.options[i] = e.target.value;
-          renderPreview(q);
-        });
-      });
-      $$('.opt-correct').forEach(cb => {
-        cb.addEventListener('change', ()=>{
-          const idx = Number(cb.getAttribute('data-idx'));
+
+      optWrap.addEventListener('change', (e) => {
+        const curQ = state.filtered[state.currentIndex];
+        if (!curQ) return;
+        const idx = Number(e.target.getAttribute('data-idx'));
+        if (isNaN(idx)) return;
+
+        if (e.target.classList.contains('yn-correct')) {
+          const val = Number(e.target.value); // 0=Yes, 1=No
+          if (!Array.isArray(curQ.correct)) curQ.correct = [];
+          curQ.correct[idx] = val;
+          $('#qCorrect').value = curQ.correct.join(',');
+          syncFromForm();
+          renderPreview(curQ);
+          markUnsaved();
+        } else if (e.target.classList.contains('opt-correct')) {
           if ($('#qType').value === 'STANDARD') {
             // single choice: only one correct
-            q.correct = idx;
+            curQ.correct = idx;
             // uncheck others
-            $$('.opt-correct').forEach(other => { if (other !== cb) other.checked = false; });
+            $$('.opt-correct').forEach(other => { if (other !== e.target) other.checked = false; });
           } else {
             // multi-like types: correct as array
-            const arr = Array.isArray(q.correct) ? q.correct.slice() : [];
-            if (cb.checked && !arr.includes(idx)) arr.push(idx);
-            if (!cb.checked) {
+            const arr = Array.isArray(curQ.correct) ? curQ.correct.slice() : [];
+            if (e.target.checked && !arr.includes(idx)) arr.push(idx);
+            if (!e.target.checked) {
               const pos = arr.indexOf(idx);
-              if (pos>=0) arr.splice(pos,1);
+              if (pos >= 0) arr.splice(pos, 1);
             }
-            q.correct = arr;
+            curQ.correct = arr;
           }
-          $('#qCorrect').value = Array.isArray(q.correct) ? q.correct.join(',') : String(q.correct ?? '');
-          renderPreview(q);
-        });
+          $('#qCorrect').value = Array.isArray(curQ.correct) ? curQ.correct.join(',') : String(curQ.correct ?? '');
+          syncFromForm();
+          renderPreview(curQ);
+          markUnsaved();
+        }
       });
-      $$('.opt-del').forEach(btn => {
-        btn.addEventListener('click', ()=>{
-          const idx = Number(btn.getAttribute('data-idx'));
-          q.options.splice(idx,1);
+
+      optWrap.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.opt-del');
+        if (!delBtn) return;
+        const curQ = state.filtered[state.currentIndex];
+        if (!curQ) return;
+        const idx = Number(delBtn.getAttribute('data-idx'));
+        if (isNaN(idx)) return;
+        const curType = curQ.question_type || (Array.isArray(curQ.correct) ? 'MULTI' : 'STANDARD');
+
+        if (curType === 'YES_NO_MATRIX') {
+          if (Array.isArray(curQ.statements)) curQ.statements.splice(idx, 1);
+          if (Array.isArray(curQ.correct)) curQ.correct.splice(idx, 1);
+        } else {
+          curQ.options.splice(idx, 1);
           // reindex correct
-          if (Array.isArray(q.correct)) {
-            q.correct = q.correct.filter(i=>i!==idx).map(i=> i>idx ? i-1 : i);
-          } else if (typeof q.correct === 'number') {
-            if (q.correct === idx) q.correct = undefined; else if (q.correct > idx) q.correct -= 1;
+          if (Array.isArray(curQ.correct)) {
+            curQ.correct = curQ.correct.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
+          } else if (typeof curQ.correct === 'number') {
+            if (curQ.correct === idx) curQ.correct = undefined; else if (curQ.correct > idx) curQ.correct -= 1;
           }
-          renderForm();
-        });
+        }
+        renderForm();
       });
     }
 
@@ -640,6 +669,14 @@
         try {
           const data = JSON.parse(reader.result);
           if (!Array.isArray(data)) throw new Error('JSON must be an array of questions');
+          // Validate that each item has the required fields
+          for (let i = 0; i < data.length; i++) {
+            const item = data[i];
+            if (!item || typeof item.id === 'undefined' || typeof item.question === 'undefined' ||
+                !Array.isArray(item.options) || typeof item.correct === 'undefined') {
+              throw new Error(`Question at index ${i} is missing required fields (id, question, options, correct)`);
+            }
+          }
           state.items = data;
           applyFilter();
           state.currentIndex = 0;
@@ -737,13 +774,17 @@
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Add animations
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    `;
-    document.head.appendChild(style);
+    // Add animations (only once)
+    if (!document.getElementById('delete-modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'delete-modal-styles';
+      style.textContent = `
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+      `;
+      document.head.appendChild(style);
+    }
 
     // Event handlers
     const closeModal = () => {
@@ -780,14 +821,6 @@
     };
     document.addEventListener('keydown', escHandler);
 
-    // Add fadeOut animation
-    style.textContent += '@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }';
-  }
-
-  function saveCurrent(){
-    // Kept for internal reuse if needed; primary Save goes through saveAll()
-    syncFromForm();
-    renderList();
   }
 
   // ------- Preview -------
@@ -1136,13 +1169,16 @@
     });
 
     // Live preview updates for inputs (mark as unsaved on any change)
-    $('#qText').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#qExplanation').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#qImages').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#eImages').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#qCorrect').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#qDragSelectN').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
-    $('#qStatements').addEventListener('input', ()=>{ syncFromForm(); renderPreview(state.filtered[state.currentIndex]); markUnsaved(); });
+    // Debounce the expensive sync+render, but keep markUnsaved immediate
+    const debouncedSyncAndPreview = debounce(() => {
+      syncFromForm();
+      renderPreview(state.filtered[state.currentIndex]);
+    }, 150);
+
+    ['#qText', '#qExplanation', '#qImages', '#eImages', '#qCorrect', '#qDragSelectN', '#qStatements'].forEach(sel => {
+      const el = $(sel);
+      if (el) el.addEventListener('input', () => { markUnsaved(); debouncedSyncAndPreview(); });
+    });
 
     // Image upload handlers (dev local server)
     async function uploadFiles(inputEl, targetTextarea){
@@ -1175,7 +1211,7 @@
     // Load custom exam from exam-dumps/<code>.json
     $('#loadCustomExam')?.addEventListener('click', async()=>{
       const code = ($('#customExamCode').value||'').trim();
-      if (!code) { notify('Enter an exam code (e.g., ai102)'); return; }
+      if (!code) { notify('Enter an exam code'); return; }
       try {
         const resp = await fetch(`./exam-dumps/${encodeURIComponent(code)}.json`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -1230,18 +1266,5 @@
     updatePersistenceHint();
     setupBeforeUnloadWarning();
 
-    // If AI-102 data loads asynchronously, refresh when ready (only if using master, not override)
-    document.addEventListener('ai102QuestionsReady', ()=>{
-      if (state.exam === 'ai102') {
-        const hasOverride = !!localStorage.getItem('custom_ai102_questions');
-        if (!hasOverride) {
-          state.items = loadMaster('ai102');
-          applyFilter();
-          state.currentIndex = 0;
-          renderList();
-          renderForm();
-        }
-      }
-    });
   });
 })();

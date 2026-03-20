@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Azure AI Exam</title>
+  <meta name="description" content="Exam Simulator - Take practice exams with multiple question types and instant feedback">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📝</text></svg>">
+  <title>Exam Simulator</title>
   <link rel="stylesheet" href="style-new.css" />
   <link rel="stylesheet" href="multi-exam-styles.css" />
   <link rel="stylesheet" href="modern-enhancements.css" />
@@ -12,8 +15,8 @@
 </head>
 <body>
   <div class="theme-controls">
-    <button class="theme-toggle" title="Toggle theme">
-      <i class="fas fa-moon theme-icon"></i>
+    <button class="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+      <i aria-hidden="true" class="fas fa-moon theme-icon"></i>
     </button>
   </div>
   <div class="container">
@@ -22,18 +25,21 @@
       <div class="exam-header">
         <div class="exam-info-header">
           <span id="current-exam-badge" class="exam-badge">Exam</span>
-          <button id="switch-exam" class="btn btn-outline-sm" onclick="closeExamTab()">
-            <i class="fas fa-door-open"></i> Close
+          <button id="switch-exam" class="btn btn-outline-sm">
+            <i aria-hidden="true" class="fas fa-door-open"></i> Close
           </button>
         </div>
         <div class="exam-progress">
-          <div class="progress-bar">
+          <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
             <div id="progress-fill" class="progress-fill"></div>
           </div>
           <span id="question-counter">&nbsp;</span>
+          <button id="toggle-navigator" class="toggle-navigator" title="Question Navigator">
+            <i class="fas fa-th" aria-hidden="true"></i>
+          </button>
         </div>
         <div class="exam-timer">
-          <i class="fas fa-clock"></i>
+          <i aria-hidden="true" class="fas fa-clock"></i>
           <span id="timer">--:--</span>
         </div>
       </div>
@@ -41,7 +47,7 @@
       <div class="question-container">
         <div id="question-number" class="question-number">Question</div>
         <div id="question-type-indicator" class="question-type-indicator" style="display:none;">
-          <i class="fas fa-info-circle"></i>
+          <i aria-hidden="true" class="fas fa-info-circle"></i>
           <span id="question-type-text"></span>
         </div>
         <div id="question-text" class="question-text"></div>
@@ -49,17 +55,17 @@
         <div id="options-container" class="options-container"></div>
         <div class="question-controls">
           <button id="mark-review-btn" class="btn btn-outline">
-            <i class="fas fa-flag"></i> Mark for Review
+            <i aria-hidden="true" class="fas fa-flag"></i> Mark for Review
           </button>
           <button id="show-answer-btn" class="btn btn-info">
-            <i class="fas fa-lightbulb"></i> Show Answer
+            <i aria-hidden="true" class="fas fa-lightbulb"></i> Show Answer
           </button>
         </div>
         <div id="answer-feedback" class="answer-feedback" style="display: none;">
           <div class="feedback-header">
             <span class="feedback-status"></span>
-            <button id="close-feedback" class="close-feedback">
-              <i class="fas fa-times"></i>
+            <button id="close-feedback" class="close-feedback" aria-label="Close feedback">
+              <i aria-hidden="true" class="fas fa-times"></i>
             </button>
           </div>
           <div class="feedback-content">
@@ -70,17 +76,31 @@
         </div>
         <div class="navigation-buttons">
           <button id="prev-btn" class="btn btn-secondary" disabled>
-            <i class="fas fa-arrow-left"></i> Previous
+            <i aria-hidden="true" class="fas fa-arrow-left"></i> Previous
           </button>
           <button id="next-btn" class="btn btn-primary">
-            Next <i class="fas fa-arrow-right"></i>
+            Next <i aria-hidden="true" class="fas fa-arrow-right"></i>
           </button>
+        </div>
+        <div id="question-navigator" class="question-navigator" style="display:none;">
+          <div class="nav-grid" id="nav-grid"></div>
+          <div class="nav-legend">
+            <span class="nav-legend-item"><span class="nav-dot answered"></span> Answered</span>
+            <span class="nav-legend-item"><span class="nav-dot current"></span> Current</span>
+            <span class="nav-legend-item"><span class="nav-dot marked"></span> Marked</span>
+            <span class="nav-legend-item"><span class="nav-dot unanswered"></span> Unanswered</span>
+          </div>
         </div>
       </div>
 
-      <button id="finish-exam" class="btn btn-warning finish-btn" style="display: none;">
-        <i class="fas fa-check"></i> Finish Exam
-      </button>
+      <div class="exam-bottom-actions">
+        <button id="review-marked-btn" class="btn-review-marked" title="Review marked questions">
+          <i aria-hidden="true" class="fas fa-flag"></i> Review Marked
+        </button>
+        <button id="finish-exam" class="btn btn-warning finish-btn" style="display: none;">
+          <i aria-hidden="true" class="fas fa-check"></i> Finish Exam
+        </button>
+      </div>
     </div>
 
     <div id="results-screen" class="screen">
@@ -100,7 +120,7 @@
                   </div>
                 </div>
                 <div class="status-icon" id="result-status-icon">
-                  <i class="fas fa-check-circle"></i>
+                  <i aria-hidden="true" class="fas fa-check-circle"></i>
                 </div>
               </div>
               <div class="summary-metrics">
@@ -132,7 +152,7 @@
 
             <section class="results-insights-card">
               <div class="insights-header">
-                <h3><i class="fas fa-chart-line"></i> Performance Insights</h3>
+                <h3><i aria-hidden="true" class="fas fa-chart-line"></i> Performance Insights</h3>
                 <p>See how this session compares to the target score.</p>
               </div>
               <div class="insight-progress">
@@ -164,7 +184,7 @@
                 </li>
               </ul>
               <div class="insight-hint">
-                <i class="fas fa-info-circle"></i>
+                <i aria-hidden="true" class="fas fa-info-circle"></i>
                 <span>Use Retake Exam to immediately replay with updated question order.</span>
               </div>
             </section>
@@ -174,11 +194,11 @@
 
           <div class="results-actions-modern">
             <button id="restart-exam" class="action-btn restart-btn">
-              <div class="btn-icon"><i class="fas fa-redo-alt"></i></div>
+              <div class="btn-icon"><i aria-hidden="true" class="fas fa-redo-alt"></i></div>
               <div class="btn-content"><span class="btn-title">Retake Exam</span></div>
             </button>
-            <button id="back-to-home" class="action-btn home-btn" onclick="closeExamTab()">
-              <div class="btn-icon"><i class="fas fa-home"></i></div>
+            <button id="back-to-home" class="action-btn home-btn">
+              <div class="btn-icon"><i aria-hidden="true" class="fas fa-home"></i></div>
               <div class="btn-content"><span class="btn-title">Back to Home</span></div>
             </button>
           </div>
@@ -186,6 +206,7 @@
       </div>
     </div>
   </div>
+  <script src="utils.js"></script>
   <script src="image-loader.js"></script>
   <script src="exam-manager.js"></script>
 
@@ -196,94 +217,6 @@
   <script src="image-storage.js"></script>
   
   <script src="script-multi-exam.js"></script>
-  <script>
-    // Close exam tab or navigate to homepage
-    function closeExamTab() {
-      // Try to close the tab (works if opened via window.open)
-      window.close();
-      
-      // If close() didn't work (tab still open), redirect after small delay
-      setTimeout(() => {
-        if (!window.closed) {
-          window.location.href = 'index.html';
-        }
-      }, 100);
-    }
-
-    // Dynamic exam loading from user-content
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Wait for exams to load via exam-loader.js
-      if (window.examsLoadedPromise) {
-        await window.examsLoadedPromise;
-      }
-
-      const params = new URLSearchParams(window.location.search);
-      const examId = params.get('exam') || 'ai900';
-
-      console.log(`📚 Loading exam: ${examId}`);
-
-      // Set image loader to current exam
-      if (window.imageLoader) {
-        window.imageLoader.setCurrentExam(examId);
-      }
-
-      // Check if images are available in IndexedDB
-      if (window.imageStorage) {
-        try {
-          const imageCount = await window.imageStorage.getExamImageCount(examId);
-          if (imageCount > 0) {
-            console.log(`✅ ${imageCount} images available in IndexedDB for ${examId}`);
-          } else {
-            console.warn(`⚠️ No images found for exam "${examId}". Please re-import the ZIP file.`);
-            const warningBanner = document.createElement('div');
-            warningBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff9800;color:white;padding:10px 20px;text-align:center;z-index:10000;font-weight:bold;';
-            warningBanner.innerHTML = '⚠️ Images not loaded! Please go back to homepage and re-import the exam ZIP file.';
-            document.body.appendChild(warningBanner);
-          }
-        } catch (e) {
-          console.warn('Could not check image count:', e);
-        }
-      }
-
-      // Check if exam exists in window.userExams (loaded by exam-loader.js)
-      if (window.userExams && window.userExams[examId]) {
-        const examData = window.userExams[examId];
-
-        if (window.examSimulator) {
-          window.examSimulator.currentExam = examId;
-
-          // Generate metadata if not present
-          let metadata = examData.metadata;
-          if (!metadata || !metadata.name) {
-            metadata = {
-              name: examId.toUpperCase(),
-              fullName: `Custom Exam: ${examId}`,
-              duration: 60,
-              questionCount: Math.min(examData.questions.length, 45),
-              passScore: 70,
-              modules: []
-            };
-          }
-
-          // Load exam into simulator
-          window.examSimulator.examData[examId] = {
-            name: metadata.name,
-            fullName: metadata.fullName,
-            duration: metadata.duration,
-            questionCount: metadata.questionCount,
-            passScore: metadata.passScore,
-            questions: examData.questions,
-            modules: metadata.modules || []
-          };
-
-          console.log(`✅ Loaded ${examData.questions.length} questions for ${examId}`);
-          window.examSimulator.startExam();
-        }
-      } else {
-        console.error(`❌ Failed to load exam: ${examId}`);
-        alert(`Exam ${examId} not found. Please import it first or check if it's activated.`);
-      }
-    });
-  </script>
+  <script src="exam-init.js"></script>
 </body>
 </html>

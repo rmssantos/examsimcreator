@@ -1,104 +1,88 @@
-// Multi-Exam Simulator - AI-900 and AI-102 Support
+// Multi-Exam Simulator - Generic Exam Support
 // Supports categorized images (question images vs explanation images)
+
+class TimerManager {
+    constructor() {
+        this.timer = null;
+        this.remainingTime = 0;
+    }
+
+    start(totalSeconds, onTick, onExpire) {
+        this.remainingTime = totalSeconds;
+        this.timer = setInterval(() => {
+            this.remainingTime--;
+            onTick(this.remainingTime);
+            if (this.remainingTime <= 0) {
+                this.stop();
+                onExpire();
+            }
+        }, 1000);
+    }
+
+    stop() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    getRemainingTime() {
+        return this.remainingTime;
+    }
+}
+
+class QuestionNavigator {
+    constructor() {
+        this.container = null;
+    }
+
+    update(questions, currentIndex, selectedAnswers, markedForReview, onJump) {
+        const grid = document.getElementById('nav-grid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < questions.length; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i + 1;
+            btn.title = 'Question ' + (i + 1);
+
+            if (i === currentIndex) btn.classList.add('nav-current');
+            if (selectedAnswers[i] !== undefined && selectedAnswers[i] !== null) {
+                btn.classList.add('nav-answered');
+            }
+            if (markedForReview && markedForReview.has(i)) {
+                btn.classList.add('nav-marked');
+            }
+
+            btn.addEventListener('click', () => onJump(i));
+            fragment.appendChild(btn);
+        }
+        grid.appendChild(fragment);
+    }
+
+    toggle() {
+        const nav = document.getElementById('question-navigator');
+        if (nav) nav.style.display = nav.style.display === 'none' ? 'block' : 'none';
+    }
+}
 
 class MultiExamSimulator {
     constructor() {
         this.currentExam = null;
-    this.activeQuestions = null; // holds the sampled & randomized questions for the session
-        this.examData = {
-            'ai900': {
-                name: 'AI-900',
-                fullName: 'Azure AI Fundamentals',
-                duration: 45,
-                questionCount: 45,
-                passScore: 75,
-                questions: [],
-                modules: [
-                    { icon: 'fas fa-brain', name: 'AI Workloads & Services' },
-                    { icon: 'fas fa-robot', name: 'Machine Learning Principles' },
-                    { icon: 'fas fa-eye', name: 'Computer Vision Workloads' },
-                    { icon: 'fas fa-language', name: 'Natural Language Processing' },
-                    { icon: 'fas fa-magic', name: 'Generative AI Workloads' }
-                ],
-                resources: [
-                    { icon: 'fab fa-microsoft', name: 'Official Exam Page', url: 'https://docs.microsoft.com/en-us/learn/certifications/exams/ai-900' },
-                    { icon: 'fas fa-graduation-cap', name: 'AI Fundamentals Path', url: 'https://docs.microsoft.com/en-us/learn/paths/get-started-with-artificial-intelligence-on-azure/' },
-                    { icon: 'fas fa-cogs', name: 'Azure AI Services', url: 'https://docs.microsoft.com/en-us/azure/cognitive-services/' }
-                ]
-            },
-            'ai102': {
-                name: 'AI-102',
-                fullName: 'Azure AI Engineer Associate',
-                duration: 150,
-                questionCount: 45,
-                passScore: 70,
-                questions: [],
-                modules: [
-                    { icon: 'fas fa-language', name: 'Language Understanding (LUIS)' },
-                    { icon: 'fas fa-robot', name: 'Bot Framework' },
-                    { icon: 'fas fa-eye', name: 'Computer Vision Services' },
-                    { icon: 'fas fa-search', name: 'Cognitive Search' },
-                    { icon: 'fas fa-microphone', name: 'Speech Services' },
-                    { icon: 'fas fa-file-alt', name: 'Form Recognizer' },
-                    { icon: 'fas fa-brain', name: 'Text Analytics' },
-                    { icon: 'fas fa-exchange-alt', name: 'Translator' }
-                ],
-                resources: [
-                    { icon: 'fab fa-microsoft', name: 'Official Exam Page', url: 'https://docs.microsoft.com/en-us/learn/certifications/exams/ai-102' },
-                    { icon: 'fas fa-graduation-cap', name: 'AI Engineer Path', url: 'https://docs.microsoft.com/en-us/learn/paths/azure-ai-engineer/' },
-                    { icon: 'fas fa-code', name: 'AI SDKs & APIs', url: 'https://docs.microsoft.com/en-us/azure/cognitive-services/cognitive-services-apis-create-account' }
-                ]
-            }
-        };
+        this.activeQuestions = null; // holds the sampled & randomized questions for the session
+        this.examData = {};
 
         this.currentQuestionIndex = 0;
         this.selectedAnswers = {};
         this.markedForReview = new Set();
         this.startTime = null;
         this.timer = null;
-
-        this.syncBuiltInMetadata();
+        this.timerManager = new TimerManager();
+        this.navigator = new QuestionNavigator();
+        this.reviewPage = 0;
 
         this.init();
-    }
-
-    // If an exam pack was imported with the same ID as a built-in exam
-    // (e.g. ai900), prefer the stored metadata so UI/timer reflect it.
-    syncBuiltInMetadata() {
-        const applyMeta = (examId) => {
-            try {
-                // Prefer window.userExams metadata (server mode), else localStorage
-                const metaFromMemory = window.userExams && window.userExams[examId] && window.userExams[examId].metadata;
-                let meta = metaFromMemory;
-                if (!meta) {
-                    const raw = localStorage.getItem(`exam_metadata_${examId}`);
-                    meta = raw ? JSON.parse(raw) : null;
-                }
-                if (!meta || typeof meta !== 'object') return;
-                const target = this.examData[examId];
-                if (!target) return;
-
-                if (meta.name) target.name = String(meta.name);
-                if (meta.fullName) target.fullName = String(meta.fullName);
-
-                const dur = Number(meta.duration);
-                if (Number.isFinite(dur) && dur > 0) target.duration = dur;
-
-                const qc = Number(meta.questionCount);
-                if (Number.isFinite(qc) && qc > 0) target.questionCount = qc;
-
-                const ps = Number(meta.passScore);
-                if (Number.isFinite(ps) && ps > 0) target.passScore = ps;
-
-                if (Array.isArray(meta.modules)) target.modules = meta.modules;
-                if (Array.isArray(meta.resources)) target.resources = meta.resources;
-            } catch (_) {
-                // ignore invalid metadata
-            }
-        };
-
-        applyMeta('ai900');
-        applyMeta('ai102');
     }
 
     init() {
@@ -110,7 +94,7 @@ class MultiExamSimulator {
         const params = new URLSearchParams(window.location.search);
         const examParam = params.get('exam');
         if (examParam && examParam !== 'custom') {
-            // Support dynamic exams loaded via exam-loader.js/localStorage (not only ai900/ai102)
+            // Load exam dynamically from window.userExams or localStorage
             if (!this.examData[examParam]) {
                 const loaded = this.loadExamFromRuntime(examParam);
                 if (loaded) {
@@ -119,32 +103,8 @@ class MultiExamSimulator {
                 }
             } else {
                 this.currentExam = examParam;
-                let started = false;
-                const maybeStart = () => {
-                    if (!started && this.examData[this.currentExam].questions.length > 0) {
-                        started = true;
-                        this.startExam();
-                    }
-                };
-                if (examParam === 'ai102') {
-                    // If loader already populated, use it immediately
-                    if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-                        const got = window.ai102Questions.getAllQuestions();
-                        if (Array.isArray(got) && got.length > 0) {
-                            this.examData['ai102'].questions = got;
-                            maybeStart();
-                        }
-                    }
-                    // Also listen for readiness in case data arrives slightly later
-                    document.addEventListener('ai102QuestionsReady', () => {
-                        if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-                            this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-                            maybeStart();
-                        }
-                    });
-                } else {
-                    // For AI-900 or other types, start when questions present
-                    setTimeout(maybeStart, 50);
+                if (this.examData[this.currentExam].questions.length > 0) {
+                    this.startExam();
                 }
             }
         }
@@ -156,27 +116,11 @@ class MultiExamSimulator {
             }
         });
 
-        // When AI-102 async data is ready, refresh cached questions and UI
-        document.addEventListener('ai102QuestionsReady', (e) => {
-            if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-                this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-                // Update the AI-102 card questions stat if on home
-                const ai102Card = document.querySelector('.exam-card.ai102 .exam-stat-number');
-                if (ai102Card) ai102Card.textContent = this.examData['ai102'].questions.length;
-            }
-        });
-
         // Auto-refresh question banks if overrides change (even across tabs)
         window.addEventListener('storage', (ev) => {
-            if (ev.key === 'custom_ai900_questions' || ev.key === 'custom_ai102_questions') {
+            if (ev.key && ev.key.startsWith('custom_') && ev.key.endsWith('_questions')) {
                 console.log('Detected override change in storage. Reloading question banks.');
                 this.loadQuestions();
-                // If currently in an exam, we won't disrupt the session, but new sessions will use fresh data.
-                // Update home cards if present
-                const ai900Card = document.querySelector('.exam-card.ai900 .exam-stat-number');
-                if (ai900Card) ai900Card.textContent = this.examData['ai900'].questions.length;
-                const ai102Card2 = document.querySelector('.exam-card.ai102 .exam-stat-number');
-                if (ai102Card2) ai102Card2.textContent = this.examData['ai102'].questions.length;
             }
         });
     }
@@ -185,6 +129,41 @@ class MultiExamSimulator {
     getCurrentQuestions() {
         const master = this.examData[this.currentExam]?.questions || [];
         return Array.isArray(this.activeQuestions) && this.activeQuestions.length > 0 ? this.activeQuestions : master;
+    }
+
+    // Helper: check if a user's answer is correct for any question type
+    isAnswerCorrect(question, userAnswer) {
+        const type = question.question_type || 'SINGLE';
+
+        if (type === 'SEQUENCE') {
+            if (!Array.isArray(userAnswer)) return false;
+            const correctOrder = question.correct;
+            return JSON.stringify(userAnswer) === JSON.stringify(correctOrder);
+        }
+
+        if (type === 'YES_NO_MATRIX') {
+            if (!Array.isArray(userAnswer)) return false;
+            const correctAnswers = question.correct;
+            return userAnswer.length === correctAnswers.length &&
+                   userAnswer.every((ans, i) => ans === correctAnswers[i]);
+        }
+
+        if (type === 'DRAG_DROP_SELECT') {
+            if (!Array.isArray(userAnswer)) return false;
+            const correctAnswers = question.correct;
+            return userAnswer.length === correctAnswers.length &&
+                   userAnswer.every((ans, i) => ans === correctAnswers[i]);
+        }
+
+        // SINGLE or MULTI
+        if (Array.isArray(question.correct)) {
+            if (!Array.isArray(userAnswer)) return false;
+            const sortedUser = [...userAnswer].sort();
+            const sortedCorrect = [...question.correct].sort();
+            return JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
+        }
+
+        return userAnswer === question.correct;
     }
 
     // Helper: shuffle array in-place (Fisher-Yates)
@@ -208,14 +187,14 @@ class MultiExamSimulator {
         if (!Array.isArray(all) || all.length === 0) return [];
         if (all.length <= count) return [...all];
 
-        // Group by module (null/undefined -> 'Uncategorized')
+        // Group by module (null/undefined -> 'Uncategorized') using copies
         const buckets = new Map();
         for (const q of all) {
             const key = (q && q.module) ? String(q.module) : 'Uncategorized';
             if (!buckets.has(key)) buckets.set(key, []);
             buckets.get(key).push(q);
         }
-        // Shuffle each bucket
+        // Shuffle each bucket (these are fresh arrays, not the original)
         for (const arr of buckets.values()) this.shuffle(arr);
 
         const groups = Array.from(buckets.entries());
@@ -226,26 +205,28 @@ class MultiExamSimulator {
         const base = Math.floor(count / k);
         let remainder = count % k;
         const selected = [];
-        const remaindersPool = [];
+        // Track how many items consumed from each group (avoids mutating arrays)
+        const consumed = new Array(groups.length).fill(0);
 
         // First pass: take base (+1 for first remainder groups) from each bucket
         for (let i=0;i<groups.length;i++) {
             const arr = groups[i][1];
             const target = Math.min(arr.length, base + (remainder>0 ? 1 : 0));
             if (remainder>0) remainder--;
-            const take = arr.splice(0, target);
-            selected.push(...take);
-            if (arr.length) remaindersPool.push(arr);
+            selected.push(...arr.slice(consumed[i], consumed[i] + target));
+            consumed[i] += target;
         }
 
-        // If still short (due to small buckets), fill round-robin from remaining buckets
+        // If still short (due to small buckets), fill round-robin from remaining groups
         let idx = 0;
-        while (selected.length < count && remaindersPool.length > 0) {
-            const arr = remaindersPool[idx % remaindersPool.length];
-            if (arr.length > 0) selected.push(arr.shift());
-            // Remove empty arrays
-            for (let i = remaindersPool.length - 1; i >= 0; i--) {
-                if (remaindersPool[i].length === 0) remaindersPool.splice(i, 1);
+        let activeGroups = groups.filter((_, i) => consumed[i] < groups[i][1].length).length;
+        while (selected.length < count && activeGroups > 0) {
+            const gi = idx % groups.length;
+            const arr = groups[gi][1];
+            if (consumed[gi] < arr.length) {
+                selected.push(arr[consumed[gi]]);
+                consumed[gi]++;
+                if (consumed[gi] >= arr.length) activeGroups--;
             }
             idx++;
         }
@@ -275,49 +256,36 @@ class MultiExamSimulator {
     }
 
     loadQuestions() {
-        // Load AI-900 questions (prefer embedded dump if present)
-        if (Array.isArray(window.ai900Dump)) {
-            this.examData['ai900'].questions = window.ai900Dump;
-        } else if (typeof getAllQuestions === 'function') {
-            this.examData['ai900'].questions = getAllQuestions();
-        }
-
-        // Load AI-102 questions: prefer built integration (ai102_questions_text_only.js) which fetches ./ai102-extractor/out/ai102_dump.json
-        if (typeof window.ai102Questions !== 'undefined' && window.ai102Questions.getAllQuestions) {
-            this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-        }
-
-        // Optional local overrides from localStorage (created by the visual editor)
-        try {
-            const override900 = localStorage.getItem('custom_ai900_questions');
-            if (override900) {
-                const parsed900 = JSON.parse(override900);
-                if (Array.isArray(parsed900) && parsed900.length > 0) {
-                    console.log('Using local override for AI-900 questions');
-                    this.examData['ai900'].questions = parsed900;
+        // Load all exams from window.userExams (populated by exam-loader.js)
+        if (window.userExams) {
+            for (const [examId, examEntry] of Object.entries(window.userExams)) {
+                if (!this.examData[examId]) {
+                    this.loadExamFromRuntime(examId);
                 }
             }
-        } catch (e) {
-            console.warn('Failed to parse custom_ai900_questions override:', e);
         }
 
-        try {
-            const override102 = localStorage.getItem('custom_ai102_questions');
-            if (override102) {
-                const parsed102 = JSON.parse(override102);
-                if (Array.isArray(parsed102) && parsed102.length > 0) {
-                    console.log('Using local override for AI-102 questions');
-                    this.examData['ai102'].questions = parsed102;
+        // Apply localStorage overrides for any loaded exam
+        for (const examId of Object.keys(this.examData)) {
+            try {
+                const overrideRaw = localStorage.getItem(`custom_${examId}_questions`);
+                if (overrideRaw) {
+                    const parsed = JSON.parse(overrideRaw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        console.log(`Using local override for ${examId} questions`);
+                        this.examData[examId].questions = parsed;
+                    }
                 }
+            } catch (e) {
+                console.warn(`Failed to parse custom_${examId}_questions override:`, e);
             }
-        } catch (e) {
-            console.warn('Failed to parse custom_ai102_questions override:', e);
         }
 
-        console.log('Loaded questions:', {
-            'ai900': this.examData['ai900'].questions.length,
-            'ai102': this.examData['ai102'].questions.length
-        });
+        const summary = {};
+        for (const [id, data] of Object.entries(this.examData)) {
+            summary[id] = data.questions.length;
+        }
+        console.log('Loaded questions:', summary);
     }
 
     bindEvents() {
@@ -393,28 +361,26 @@ class MultiExamSimulator {
                 this.toggleTheme();
             });
         });
+
+        // Question navigator toggle
+        const toggleNav = document.getElementById('toggle-navigator');
+        if (toggleNav) {
+            toggleNav.addEventListener('click', () => {
+                this.navigator.toggle();
+            });
+        }
+
+        // Review marked questions button
+        const reviewMarkedBtn = document.getElementById('review-marked-btn');
+        if (reviewMarkedBtn) {
+            reviewMarkedBtn.addEventListener('click', () => {
+                this.reviewMarkedQuestions();
+            });
+        }
     }
 
     selectExam(examType) {
         if (!this.examData[examType]) return;
-
-        // If AI-102 selected and not yet loaded, try to fetch and proceed when ready
-        if (examType === 'ai102' && this.examData['ai102'].questions.length === 0) {
-            if (window.ai102Questions && typeof window.ai102Questions.fetchAndPrepare === 'function') {
-                window.ai102Questions.fetchAndPrepare().then(() => {
-                    this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-                    if (this.examData['ai102'].questions.length === 0) {
-                        alert('AI-102 questions are not available yet.');
-                        return;
-                    }
-                    this._completeExamSelection(examType);
-                });
-                return;
-            } else {
-                alert('AI-102 questions are not available yet.');
-                return;
-            }
-        }
 
         if (this.examData[examType].questions.length === 0) {
             alert(`Sorry, ${examType.toUpperCase()} questions are not available yet.`);
@@ -447,14 +413,12 @@ class MultiExamSimulator {
                 } catch (_) {}
 
                 // 3) Minimal fallback
-                const is900 = String(code).includes('900');
-                const is102 = String(code).includes('102');
                 return {
                     name: code.toUpperCase(),
                     fullName: code,
-                    duration: is102 ? 150 : 45,
+                    duration: 45,
                     questionCount: 45,
-                    passScore: is900 ? 75 : 70,
+                    passScore: 70,
                     modules: []
                 };
             };
@@ -583,7 +547,7 @@ class MultiExamSimulator {
         document.getElementById('exam-duration').textContent = `${exam.duration} minutes`;
         document.getElementById('exam-questions').textContent = `${exam.questionCount} questions`;
         document.getElementById('exam-pass-score').textContent = `${exam.passScore}%`;
-        document.getElementById('exam-images').textContent = exam.name === 'AI-102' ? 'With HD Images' : 'With Images';
+        document.getElementById('exam-images').textContent = 'With Images';
     }
 
     updateModulesAndResources(exam) {
@@ -592,7 +556,8 @@ class MultiExamSimulator {
         modulesList.innerHTML = '';
         exam.modules.forEach(module => {
             const li = document.createElement('li');
-            li.innerHTML = `<i class="${module.icon}"></i> ${module.name}`;
+            const safeIcon = /^[a-zA-Z0-9 \-]+$/.test(module.icon || '') ? module.icon : 'fas fa-book';
+            li.innerHTML = `<i class="${safeIcon}"></i> ${this.escapeHtml(module.name)}`;
             modulesList.appendChild(li);
         });
 
@@ -603,10 +568,58 @@ class MultiExamSimulator {
             const a = document.createElement('a');
             a.href = resource.url;
             a.target = '_blank';
+            a.rel = 'noopener noreferrer';
             a.className = 'resource-compact';
-            a.innerHTML = `<i class="${resource.icon}"></i> ${resource.name}`;
+            const safeIcon = /^[a-zA-Z0-9 \-]+$/.test(resource.icon || '') ? resource.icon : 'fas fa-link';
+            a.innerHTML = `<i class="${safeIcon}"></i> ${this.escapeHtml(resource.name)}`;
             resourcesList.appendChild(a);
         });
+    }
+
+    setupKeyboardShortcuts() {
+        this._keyHandler = (e) => {
+            // Don't trigger if user is typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.previousQuestion();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    this.nextQuestion();
+                    break;
+                case 'a': case 'A': case '1':
+                    this.selectOptionByIndex(0);
+                    break;
+                case 'b': case 'B': case '2':
+                    this.selectOptionByIndex(1);
+                    break;
+                case 'c': case 'C': case '3':
+                    this.selectOptionByIndex(2);
+                    break;
+                case 'd': case 'D': case '4':
+                    this.selectOptionByIndex(3);
+                    break;
+                case 'm': case 'M':
+                    this.toggleMarkForReviewShortcut();
+                    break;
+            }
+        };
+        document.addEventListener('keydown', this._keyHandler);
+    }
+
+    selectOptionByIndex(index) {
+        const options = document.querySelectorAll('#options-container .option input');
+        if (options[index]) {
+            options[index].click();
+        }
+    }
+
+    toggleMarkForReviewShortcut() {
+        const btn = document.getElementById('mark-review-btn');
+        if (btn) btn.click();
     }
 
     startExam() {
@@ -615,30 +628,10 @@ class MultiExamSimulator {
             return;
         }
 
-        // Ensure dataset is loaded before starting, particularly for AI-102
-        if (this.currentExam === 'ai102') {
-            const have = (this.examData['ai102'].questions || []).length;
-            if (have === 0) {
-                // Try to pull from loader immediately
-                if (window.ai102Questions && typeof window.ai102Questions.getAllQuestions === 'function') {
-                    const got = window.ai102Questions.getAllQuestions();
-                    if (Array.isArray(got) && got.length > 0) {
-                        this.examData['ai102'].questions = got;
-                    }
-                }
-            }
-            if ((this.examData['ai102'].questions || []).length === 0) {
-                // Wait for readiness, then start
-                const handler = () => {
-                    if (window.ai102Questions && typeof window.ai102Questions.getAllQuestions === 'function') {
-                        this.examData['ai102'].questions = window.ai102Questions.getAllQuestions();
-                    }
-                    document.removeEventListener('ai102QuestionsReady', handler);
-                    this.startExam();
-                };
-                document.addEventListener('ai102QuestionsReady', handler);
-                return;
-            }
+        // Ensure dataset is loaded before starting
+        if ((this.examData[this.currentExam].questions || []).length === 0) {
+            alert(`No questions available for this exam.`);
+            return;
         }
 
         // Reset exam state
@@ -649,7 +642,7 @@ class MultiExamSimulator {
 
         // Update exam badge in header
         document.getElementById('current-exam-badge').textContent = this.examData[this.currentExam].name;
-        document.getElementById('current-exam-badge').className = `exam-badge ${this.currentExam}`;
+        document.getElementById('current-exam-badge').className = 'exam-badge';
 
     // Build the active session question set: random sample + randomized options
     const full = this.examData[this.currentExam].questions || [];
@@ -663,8 +656,9 @@ class MultiExamSimulator {
 
     // Start timer and render
     this.startTimer();
+    this.setupKeyboardShortcuts();
     this.showQuestion(0);
-        
+
         // Switch to exam screen
         this.showScreen('exam-screen');
     }
@@ -687,10 +681,10 @@ class MultiExamSimulator {
         const progress = ((index + 1) / questions.length) * 100;
         document.getElementById('progress-fill').style.width = `${progress}%`;
 
-        // Show question type indicator for AI-102
+        // Show question type indicator
         this.showQuestionTypeIndicator(question);
 
-        // Display question images (AI-102 feature)
+        // Display question images
         this.displayQuestionImages(question);
 
     // Update options
@@ -707,24 +701,43 @@ class MultiExamSimulator {
 
         // Hide answer feedback
         this.closeFeedback();
+
+        // Update question navigator
+        this.updateNavigator();
+    }
+
+    updateNavigator() {
+        this.navigator.update(
+            this.activeQuestions || [],
+            this.currentQuestionIndex,
+            this.selectedAnswers,
+            this.markedForReview,
+            (i) => {
+                this.currentQuestionIndex = i;
+                this.showQuestion(i);
+                this.updateNavigator();
+            }
+        );
     }
 
     showQuestionTypeIndicator(question) {
         const indicator = document.getElementById('question-type-indicator');
         const typeText = document.getElementById('question-type-text');
-        
-        if (question.question_type && question.question_type !== 'STANDARD') {
-            const typeMap = {
-                'DRAG_DROP': { text: 'Drag & Drop Question', icon: 'fas fa-arrows-alt' },
-                'DRAG_DROP_SELECT': { text: 'Drag & Drop (Select) Question', icon: 'fas fa-hand-pointer' },
-                'HOTSPOT': { text: 'Hotspot Question', icon: 'fas fa-crosshairs' },
-                'SEQUENCE': { text: 'Sequence (Ordering) Question', icon: 'fas fa-sort-amount-down' },
-                'YES_NO_MATRIX': { text: 'Yes/No Matrix Question', icon: 'fas fa-th-list' }
-            };
-            
-            const type = typeMap[question.question_type] || { text: question.question_type, icon: 'fas fa-question' };
-            
-            typeText.innerHTML = `<i class="${type.icon}"></i> ${type.text}`;
+
+        // Only show indicator for special question types (not STANDARD or MULTI)
+        // MULTI already has the "Select all that apply" hint
+        const specialTypes = {
+            'DRAG_DROP': { text: 'Drag & Drop', icon: 'fas fa-arrows-alt' },
+            'DRAG_DROP_SELECT': { text: 'Select Items', icon: 'fas fa-hand-pointer' },
+            'HOTSPOT': { text: 'Hotspot', icon: 'fas fa-crosshairs' },
+            'SEQUENCE': { text: 'Ordering', icon: 'fas fa-sort-amount-down' },
+            'YES_NO_MATRIX': { text: 'Yes / No', icon: 'fas fa-th-list' }
+        };
+
+        const type = specialTypes[question.question_type];
+
+        if (type) {
+            typeText.innerHTML = `<i aria-hidden="true" class="${type.icon}"></i> ${type.text}`;
             indicator.style.display = 'block';
             indicator.className = `question-type-indicator ${question.question_type.toLowerCase()}`;
         } else {
@@ -736,7 +749,7 @@ class MultiExamSimulator {
         const container = document.getElementById('question-images');
         container.innerHTML = '';
 
-        // Show question images if available (AI-102 feature)
+        // Show question images if available
         if (question.question_images && question.question_images.length > 0) {
             question.question_images.forEach((imageInfo, index) => {
                 const imageWrapper = document.createElement('div');
@@ -759,7 +772,7 @@ class MultiExamSimulator {
                 (async () => {
                     try {
                         // Extract just the filename (last part of path)
-                        // Handles: 'images/ai900/file.jpg' -> 'file.jpg'
+                        // Handles: 'images/examid/file.jpg' -> 'file.jpg'
                         let filename = imageInfo.filename;
                         if (filename.includes('/')) {
                             filename = filename.split('/').pop();
@@ -814,7 +827,7 @@ class MultiExamSimulator {
         const container = document.getElementById('explanation-images');
         container.innerHTML = '';
 
-        // Show explanation images if available (AI-102 feature)
+        // Show explanation images if available
         if (question.explanation_images && question.explanation_images.length > 0) {
             const imagesTitle = document.createElement('h4');
             imagesTitle.textContent = 'Related Images:';
@@ -842,7 +855,7 @@ class MultiExamSimulator {
                 (async () => {
                     try {
                         // Extract just the filename (last part of path)
-                        // Handles: 'images/ai900/file.jpg' -> 'file.jpg'
+                        // Handles: 'images/examid/file.jpg' -> 'file.jpg'
                         let filename = imageInfo.filename;
                         if (filename.includes('/')) {
                             filename = filename.split('/').pop();
@@ -893,19 +906,35 @@ class MultiExamSimulator {
     }
 
     formatQuestionText(text) {
+        // Process Markdown images FIRST on raw text before escaping,
+        // so that ![alt](images/file.jpg) syntax is not broken by escapeHtml.
+        const imageTokens = [];
+        let rawText = String(text ?? '');
+
+        if (typeof processQuestionContent === 'function') {
+            // Extract image markdown references and replace with placeholders
+            const imageRegex = /!\[([^\]]*)\]\(images\/([^)]+)\)/g;
+            rawText = rawText.replace(imageRegex, (match) => {
+                const token = `__IMG_TOKEN_${imageTokens.length}__`;
+                imageTokens.push(processQuestionContent(match));
+                return token;
+            });
+        }
+
         // Escape any raw HTML from imported content to prevent injection.
-        const safe = this.escapeHtml(text);
+        const safe = this.escapeHtml(rawText);
+
         // Handle line breaks and formatting
         let formattedText = safe
             .replace(/\\n/g, '<br>')
             .replace(/\n/g, '<br>')
             .replace(/✑/g, '•');
-        
-        // Process Markdown images if processQuestionContent is available
-        if (typeof processQuestionContent === 'function') {
-            formattedText = processQuestionContent(formattedText);
-        }
-        
+
+        // Restore image HTML from tokens
+        imageTokens.forEach((html, i) => {
+            formattedText = formattedText.replace(`__IMG_TOKEN_${i}__`, html);
+        });
+
         return formattedText;
     }
 
@@ -1246,26 +1275,7 @@ class MultiExamSimulator {
     const isDragSelect = (question.question_type === 'DRAG_DROP_SELECT');
     const isMulti = Array.isArray(correctAnswer) && !isSequence && !isYesNoMatrix && !isDragSelect;
 
-        let isCorrect;
-        if (isSequence) {
-            const ua = Array.isArray(userAnswer) ? [...userAnswer] : [];
-            const ca = Array.isArray(correctAnswer) ? [...correctAnswer] : [];
-            isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v, i) => v === ca[i]);
-        } else if (isYesNoMatrix) {
-            const ua = Array.isArray(userAnswer) ? [...userAnswer] : [];
-            const ca = Array.isArray(correctAnswer) ? [...correctAnswer] : [];
-            isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v, i) => v === ca[i]);
-        } else if (isDragSelect) {
-            const ua = Array.isArray(userAnswer) ? [...new Set(userAnswer)].sort((a,b)=>a-b) : [];
-            const ca = Array.isArray(correctAnswer) ? [...new Set(correctAnswer)].sort((a,b)=>a-b) : [];
-            isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v,i)=>v===ca[i]);
-        } else if (isMulti) {
-            const ua = Array.isArray(userAnswer) ? [...new Set(userAnswer)].sort((a,b)=>a-b) : [];
-            const ca = [...new Set(correctAnswer)].sort((a,b)=>a-b);
-            isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v,i)=>v===ca[i]);
-        } else {
-            isCorrect = userAnswer === correctAnswer;
-        }
+        const isCorrect = this.isAnswerCorrect(question, userAnswer);
         
         // Show feedback
         const feedback = document.getElementById('answer-feedback');
@@ -1363,43 +1373,78 @@ class MultiExamSimulator {
         document.getElementById('mark-review-btn').classList.toggle('marked', this.markedForReview.has(index));
     }
 
-    startTimer() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
+    reviewMarkedQuestions() {
+        if (!this.markedForReview || this.markedForReview.size === 0) {
+            alert('No questions marked for review.');
+            return;
         }
+        const firstMarked = Math.min(...this.markedForReview);
+        this.currentQuestionIndex = firstMarked;
+        this.showQuestion(firstMarked);
+    }
+
+    startTimer() {
+        this.timerManager.stop();
 
         const durationMinutes = Number(this.examData?.[this.currentExam]?.duration);
         const safeMinutes = Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 45;
         const duration = safeMinutes * 60; // Convert to seconds
-        let remainingTime = duration;
 
         // Render immediately (avoids showing stale placeholder like 45:00)
-        const render = () => {
-            const minutes = Math.floor(remainingTime / 60);
-            const seconds = remainingTime % 60;
+        const renderTime = (remaining) => {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
             const el = document.getElementById('timer');
             if (el) {
                 el.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
         };
-        render();
-        
-        this.timer = setInterval(() => {
-            render();
-            
-            if (remainingTime <= 0) {
-                clearInterval(this.timer);
-                this.finishExam();
+        renderTime(duration);
+
+        this.timerManager.start(
+            duration,
+            (remaining) => {
+                renderTime(remaining);
+                // Timer warning states
+                const timerEl = document.getElementById('timer');
+                if (timerEl) {
+                    if (remaining <= 300) { // 5 minutes
+                        timerEl.classList.add('timer-danger');
+                        timerEl.classList.remove('timer-warning');
+                    } else if (remaining <= 600) { // 10 minutes
+                        timerEl.classList.add('timer-warning');
+                        timerEl.classList.remove('timer-danger');
+                    }
+                }
+            },
+            () => {
+                this.finishExam(true);
             }
-            
-            remainingTime--;
-        }, 1000);
+        );
     }
 
-    finishExam() {
-        clearInterval(this.timer);
-        
+    finishExam(forceFinish = false) {
+        if (!forceFinish) {
+            const questions = this.getCurrentQuestions();
+            let unanswered = 0;
+            for (let i = 0; i < questions.length; i++) {
+                const ans = this.selectedAnswers[i];
+                if (ans === undefined || ans === null || ans === '') unanswered++;
+            }
+            const msg = unanswered > 0
+                ? `You have ${unanswered} unanswered questions. Are you sure you want to finish?`
+                : 'Are you sure you want to finish the exam?';
+            if (!confirm(msg)) return;
+        }
+
+        // Remove keyboard shortcuts listener
+        if (this._keyHandler) {
+            document.removeEventListener('keydown', this._keyHandler);
+            this._keyHandler = null;
+        }
+
+        this.timerManager.stop();
+
         // Calculate results
         const questions = this.getCurrentQuestions();
         let correct = 0;
@@ -1407,30 +1452,11 @@ class MultiExamSimulator {
         
         questions.forEach((question, index) => {
             const ua = this.selectedAnswers[index];
-            const ca = question.correct;
-            const isSequence = (question.question_type === 'SEQUENCE');
-            const isYesNoMatrix = (question.question_type === 'YES_NO_MATRIX');
-            const isDragSelect = (question.question_type === 'DRAG_DROP_SELECT');
-            if (Array.isArray(ca)) {
-                if (isSequence) {
-                    const u = Array.isArray(ua) ? [...ua] : [];
-                    const c = [...ca];
-                    if (u.length > 0 && u.length === c.length && u.every((v,i)=>v===c[i])) correct++;
-                    else if (u.length > 0) incorrect++;
-                } else if (isYesNoMatrix) {
-                    const u = Array.isArray(ua) ? [...ua] : [];
-                    const c = [...ca];
-                    if (u.length > 0 && u.length === c.length && u.every((v,i)=>v===c[i])) correct++;
-                    else if (u.length > 0) incorrect++;
-                } else {
-                    const u = Array.isArray(ua) ? [...new Set(ua)].sort((a,b)=>a-b) : [];
-                    const c = [...new Set(ca)].sort((a,b)=>a-b);
-                    if (u.length > 0 && u.length === c.length && u.every((v,i)=>v===c[i])) correct++;
-                    else if (u.length > 0) incorrect++;
-                }
-            } else {
-                if (ua === ca) correct++;
-                else if (ua !== undefined) incorrect++;
+            const wasAnswered = ua !== undefined && ua !== null && (Array.isArray(ua) ? ua.length > 0 : true);
+            if (this.isAnswerCorrect(question, ua)) {
+                correct++;
+            } else if (wasAnswered) {
+                incorrect++;
             }
         });
         
@@ -1513,42 +1539,27 @@ class MultiExamSimulator {
         this.saveProgress(score, passed, timeSpent);
     }
 
-    generateDetailedReview() {
+    generateDetailedReview(page = 0) {
         const questions = this.getCurrentQuestions();
         const container = document.getElementById('detailed-review');
         if (!container) return;
 
+        const perPage = 10;
+        const start = page * perPage;
+        const end = Math.min(start + perPage, questions.length);
+        const totalPages = Math.ceil(questions.length / perPage);
+        this.reviewPage = page;
+
         let html = '<h3 class="section-title"><i class="fas fa-list-check"></i> Detailed Review</h3><div class="review-list">';
 
-        questions.forEach((question, index) => {
+        for (let index = start; index < end; index++) {
+            const question = questions[index];
             const userAnswer = this.selectedAnswers[index];
             const correctAnswer = question.correct;
             const isSequence = (question.question_type === 'SEQUENCE');
             const isYesNoMatrix = (question.question_type === 'YES_NO_MATRIX');
-            const isDragSelect = (question.question_type === 'DRAG_DROP_SELECT');
-            const isMulti = Array.isArray(correctAnswer) && !isSequence && !isYesNoMatrix && !isDragSelect;
 
-            let isCorrect;
-            if (isSequence) {
-                const ua = Array.isArray(userAnswer) ? [...userAnswer] : [];
-                const ca = Array.isArray(correctAnswer) ? [...correctAnswer] : [];
-                isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v, i) => v === ca[i]);
-            } else if (isYesNoMatrix) {
-                const ua = Array.isArray(userAnswer) ? [...userAnswer] : [];
-                const ca = Array.isArray(correctAnswer) ? [...correctAnswer] : [];
-                isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v, i) => v === ca[i]);
-            } else if (isDragSelect) {
-                const ua = Array.isArray(userAnswer) ? [...new Set(userAnswer)].sort((a,b)=>a-b) : [];
-                const ca = Array.isArray(correctAnswer) ? [...new Set(correctAnswer)].sort((a,b)=>a-b) : [];
-                isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v,i)=>v===ca[i]);
-            } else if (isMulti) {
-                const ua = Array.isArray(userAnswer) ? [...new Set(userAnswer)].sort((a,b)=>a-b) : [];
-                const ca = [...new Set(correctAnswer)].sort((a,b)=>a-b);
-                isCorrect = ua.length > 0 && ua.length === ca.length && ua.every((v,i)=>v===ca[i]);
-            } else {
-                isCorrect = userAnswer === correctAnswer;
-            }
-
+            const isCorrect = this.isAnswerCorrect(question, userAnswer);
             const wasAnswered = userAnswer !== undefined && userAnswer !== null && (Array.isArray(userAnswer) ? userAnswer.length > 0 : true);
             const statusClass = !wasAnswered ? 'skipped' : (isCorrect ? 'correct' : 'incorrect');
             const statusIcon = !wasAnswered ? 'fa-minus-circle' : (isCorrect ? 'fa-check-circle' : 'fa-times-circle');
@@ -1590,7 +1601,7 @@ class MultiExamSimulator {
                             <i class="fas ${statusIcon}"></i> ${statusText}
                         </span>
                     </div>
-                    <div class="review-question">${question.question.substring(0, 120)}${question.question.length > 120 ? '...' : ''}</div>
+                    <div class="review-question">${this.escapeHtml(question.question.substring(0, 120))}${question.question.length > 120 ? '...' : ''}</div>
                     <div class="review-answers">
                         <div class="review-answer-row">
                             <span class="review-label">Your Answer:</span>
@@ -1603,10 +1614,33 @@ class MultiExamSimulator {
                     </div>
                 </div>
             `;
-        });
+        }
 
         html += '</div>';
+
+        // Add pagination controls
+        if (totalPages > 1) {
+            html += '<div class="review-pagination">';
+            if (page > 0) {
+                html += `<button class="review-page-btn" data-page="${page - 1}">&larr; Previous</button>`;
+            }
+            html += `<span class="review-page-info">Page ${page + 1} of ${totalPages}</span>`;
+            if (end < questions.length) {
+                html += `<button class="review-page-btn" data-page="${page + 1}">Next &rarr;</button>`;
+            }
+            html += '</div>';
+        }
+
         container.innerHTML = html;
+
+        // Bind pagination button events
+        container.querySelectorAll('.review-page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetPage = parseInt(btn.dataset.page, 10);
+                this.generateDetailedReview(targetPage);
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     }
 
     saveProgress(score, passed, timeSpent) {
@@ -1624,15 +1658,18 @@ class MultiExamSimulator {
         progress.bestScore = Math.max(progress.bestScore, score);
         if (passed) progress.totalPassed++;
         
-        localStorage.setItem(examKey, JSON.stringify(progress));
-
-        if (window.homepage && typeof window.homepage.refreshHeroPreview === 'function') {
-            try {
-                window.homepage.refreshHeroPreview();
-            } catch (error) {
-                console.warn('Failed to refresh hero preview after saving progress:', error);
+        try {
+            localStorage.setItem(examKey, JSON.stringify(progress));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.code === 22) {
+                console.warn('localStorage quota exceeded, progress not saved');
+                alert('Storage is full. Your progress could not be saved. Please clear some old exam data and try again.');
+            } else {
+                throw e;
             }
         }
+
+        window.dispatchEvent(new CustomEvent('progress-updated'));
     }
 
     updateProgressDisplay() {
@@ -1654,7 +1691,8 @@ class MultiExamSimulator {
             let totalPassed = 0;
 
             // Check all exams in localStorage
-            for (let i = 0; i < localStorage.length; i++) {
+            const len1 = localStorage.length;
+            for (let i = 0; i < len1; i++) {
                 const key = localStorage.key(i);
                 if (key && key.endsWith('_progress')) {
                     try {
@@ -1717,9 +1755,14 @@ class MultiExamSimulator {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load saved theme
+    // Load saved theme, or respect OS preference if no saved preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.querySelectorAll('.theme-icon').forEach(icon => {
+            icon.className = 'fas fa-sun theme-icon';
+        });
+    } else if (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark-mode');
         document.querySelectorAll('.theme-icon').forEach(icon => {
             icon.className = 'fas fa-sun theme-icon';
@@ -1736,7 +1779,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Initialize simulator
-    window.examSimulator = new MultiExamSimulator();
+    window.ExamApp = window.ExamApp || {};
+    window.ExamApp.examSimulator = new MultiExamSimulator();
+    window.examSimulator = window.ExamApp.examSimulator; // backwards compat
 });
 
 // Make functions available globally for HTML onclick handlers
@@ -1747,7 +1792,8 @@ window.showProgressStatistics = function() {
     let totalExams = 0;
 
     // Check all possible exam IDs in localStorage
-    for (let i = 0; i < localStorage.length; i++) {
+    const len2 = localStorage.length;
+    for (let i = 0; i < len2; i++) {
         const key = localStorage.key(i);
         if (key && key.endsWith('_progress')) {
             const examId = key.replace('_progress', '');
@@ -1777,7 +1823,8 @@ window.exportProgress = function() {
     // Gather all progress data
     const allProgress = {};
 
-    for (let i = 0; i < localStorage.length; i++) {
+    const len3 = localStorage.length;
+    for (let i = 0; i < len3; i++) {
         const key = localStorage.key(i);
         if (key && key.endsWith('_progress')) {
             const examId = key.replace('_progress', '');
@@ -1822,30 +1869,25 @@ function showProgressModal(allProgress) {
     // Create modal overlay
     const modal = document.createElement('div');
     modal.id = 'progress-stats-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px;';
+    modal.className = 'progress-modal-overlay';
 
     // Create modal content
     const content = document.createElement('div');
-    content.style.cssText = 'background:white;border-radius:16px;max-width:1000px;width:100%;max-height:90vh;overflow:auto;position:relative;';
+    content.className = 'progress-modal-content';
 
     // Build HTML content
     let html = `
-        <div style="padding:30px;">
-            <button onclick="document.getElementById('progress-stats-modal').remove()"
-                style="position:absolute;top:15px;right:15px;background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">
-                &times;
-            </button>
-
-            <h2 style="margin:0 0 25px 0;color:#1e3c72;font-size:28px;">
-                <i class="fas fa-chart-line"></i> Progress Statistics
-            </h2>
-
-            <div style="display:grid;gap:20px;">
+        <button class="progress-modal-close">&times;</button>
+        <h2 class="progress-modal-title">
+            <i class="fas fa-chart-line"></i> Progress Statistics
+        </h2>
+        <div style="display:grid;gap:20px;">
     `;
 
     // For each exam, show statistics
     Object.entries(allProgress).forEach(([examId, progress]) => {
-        const examName = getExamName(examId);
+        const examName = _escapeHtml(getExamName(examId));
+        const safeExamId = _escapeHtml(examId);
         const attempts = progress.attempts || [];
         const bestScore = progress.bestScore || 0;
         const totalPassed = progress.totalPassed || 0;
@@ -1886,7 +1928,8 @@ function showProgressModal(allProgress) {
                     </div>
                 </div>
 
-                <button onclick="showExamAttempts('${examId}')"
+                <button data-exam-id="${safeExamId}"
+                    class="view-attempts-btn"
                     style="width:100%;padding:12px;background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s ease;">
                     <i class="fas fa-list"></i> View All Attempts
                 </button>
@@ -1895,11 +1938,25 @@ function showProgressModal(allProgress) {
     });
 
     html += `
-            </div>
         </div>
     `;
 
     content.innerHTML = html;
+
+    // Attach event listeners for close button (avoids inline onclick)
+    const closeBtn = content.querySelector('.progress-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.remove());
+    }
+
+    // Attach event listeners for view attempts buttons (avoids inline onclick XSS)
+    content.querySelectorAll('.view-attempts-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const eid = btn.getAttribute('data-exam-id');
+            showExamAttempts(eid);
+        });
+    });
+
     modal.appendChild(content);
     document.body.appendChild(modal);
 
@@ -1921,14 +1978,20 @@ function calculateTrend(attempts) {
     return '➖';
 }
 
+function _escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function getExamName(examId) {
-    const names = {
-        'ai900': 'AI-900 (Azure AI Fundamentals)',
-        'ai102': 'AI-102 (Azure AI Engineer)',
-        'ai300': 'AI-300',
-        'dump': 'Custom Dump'
-    };
-    return names[examId] || examId.toUpperCase();
+    if (window.userExams && window.userExams[examId] && window.userExams[examId].metadata) {
+        return window.userExams[examId].metadata.name || examId.toUpperCase();
+    }
+    return examId.toUpperCase();
 }
 
 window.showExamAttempts = function(examId) {
@@ -1948,24 +2011,18 @@ window.showExamAttempts = function(examId) {
     // Create modal
     const modal = document.createElement('div');
     modal.id = 'progress-stats-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px;';
+    modal.className = 'progress-modal-overlay';
 
     const content = document.createElement('div');
-    content.style.cssText = 'background:white;border-radius:16px;max-width:900px;width:100%;max-height:90vh;overflow:auto;position:relative;';
+    content.className = 'progress-modal-content';
 
     let html = `
-        <div style="padding:30px;">
-            <button onclick="document.getElementById('progress-stats-modal').remove()"
-                style="position:absolute;top:15px;right:15px;background:transparent;border:none;font-size:28px;cursor:pointer;color:#666;line-height:1;">
-                &times;
-            </button>
-
-            <h2 style="margin:0 0 10px 0;color:#1e3c72;font-size:26px;">
-                <i class="fas fa-history"></i> ${getExamName(examId)} - Attempt History
-            </h2>
-            <p style="color:#6c757d;margin-bottom:25px;">All ${attempts.length} attempts sorted by most recent</p>
-
-            <div style="display:grid;gap:12px;">
+        <button class="progress-modal-close">&times;</button>
+        <h2 class="progress-modal-title">
+            <i class="fas fa-history"></i> ${getExamName(examId)} - Attempt History
+        </h2>
+        <p style="color:#6c757d;margin-bottom:25px;">All ${attempts.length} attempts sorted by most recent</p>
+        <div style="display:grid;gap:12px;">
     `;
 
     // Sort by date (most recent first)
@@ -2017,18 +2074,30 @@ window.showExamAttempts = function(examId) {
     });
 
     html += `
-            </div>
-
-            <div style="margin-top:20px;text-align:center;">
-                <button onclick="document.getElementById('progress-stats-modal').remove();window.showProgressStatistics();"
-                    style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;">
-                    <i class="fas fa-arrow-left"></i> Back to Overview
-                </button>
-            </div>
+        </div>
+        <div style="margin-top:20px;text-align:center;">
+            <button class="back-to-overview-btn"
+                style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;">
+                <i class="fas fa-arrow-left"></i> Back to Overview
+            </button>
         </div>
     `;
 
     content.innerHTML = html;
+
+    // Attach event listeners (avoids inline onclick)
+    const closeBtn = content.querySelector('.progress-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.remove());
+    }
+    const backBtn = content.querySelector('.back-to-overview-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            modal.remove();
+            window.showProgressStatistics();
+        });
+    }
+
     modal.appendChild(content);
     document.body.appendChild(modal);
 

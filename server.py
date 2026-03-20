@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple HTTP Server for Azure AI Exam Simulator
+Simple HTTP Server for Exam Simulator
 Runs locally to bypass file:// protocol limitations
 """
 import http.server
@@ -21,10 +21,20 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(DIRECTORY), **kwargs)
 
     def end_headers(self):
-        # Add CORS headers to allow everything
-        self.send_header('Access-Control-Allow-Origin', '*')
+        # Only allow requests from the same origin (localhost)
+        origin = self.headers.get('Origin', '')
+        port = self.server.server_address[1]
+        allowed_origins = [
+            f'http://localhost:{port}',
+            f'http://127.0.0.1:{port}',
+            'null'  # for file:// protocol
+        ]
+        if origin in allowed_origins or not origin:
+            self.send_header('Access-Control-Allow-Origin', origin or f'http://localhost:{port}')
+        else:
+            self.send_header('Access-Control-Allow-Origin', 'null')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', '*')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         super().end_headers()
 
@@ -63,6 +73,13 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         content_length = int(self.headers.get('Content-Length') or 0)
+        max_size = 50 * 1024 * 1024  # 50 MB
+        if content_length > max_size:
+            self.send_response(413)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'File too large. Maximum size is 50 MB.'}).encode('utf-8'))
+            return
         data = self.rfile.read(content_length) if content_length > 0 else b''
 
         dest_dir = DIRECTORY / 'user-content' / 'exams' / exam / 'images'
@@ -91,7 +108,7 @@ def main():
     os.chdir(DIRECTORY)
 
     print("=" * 60)
-    print("Azure AI Exam Simulator - Local Server")
+    print("Exam Simulator - Local Server")
     print("=" * 60)
     print(f"Serving from: {DIRECTORY}")
     print(f"Server running at: http://localhost:{PORT}")
@@ -107,6 +124,7 @@ def main():
         print(f"Please open: http://localhost:{PORT}/")
 
     # Start server
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
         try:
             httpd.serve_forever()

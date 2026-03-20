@@ -2,14 +2,14 @@
 
 ## Overview
 
-The Azure AI Exam Simulator is designed as a **simulator/editor platform** that users can customize with their own exam content. The platform itself does NOT include any exam dumps - users must import their own content.
+The Exam Simulator is designed as a **simulator/editor platform** that users can customize with their own exam content. The platform itself does NOT include any exam dumps - users must import their own content.
 
-> ⚠️ **Compliance reminder:** Keep official exam dumps (AI-900, AI-102, etc.) in a private repository or encrypted storage. This public repo only ships the simulator code plus empty drop-zones so it can stay fully open source.
+> ⚠️ **Compliance reminder:** Keep proprietary exam content in a private repository or encrypted storage. This public repo only ships the simulator code plus empty drop-zones so it can stay fully open source.
 
 ### Recommended Two-Repo Workflow
 
 1. **Public repo (this one):** contains only the simulator (`portable/`), docs, and empty folders (`images/`, `user-content/exams/`).
-2. **Private repo or storage bucket:** holds proprietary exam packs such as `ai900-exam-pack.zip` or `ai102-v2.zip`.
+2. **Private repo or storage bucket:** holds proprietary exam packs (e.g., `my-exam-pack.zip`).
 3. **Distribution:** share the public simulator ZIP openly, then send secure links (or private Git tags) for the exam packs to authorized teammates.
 4. **Automation tip:** add a CI step that zips the simulator from the public repo and attaches it to a Release, while another private pipeline builds encrypted exam packs.
 

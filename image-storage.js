@@ -11,6 +11,11 @@ class ImageStorage {
     }
 
     async init() {
+        if (!window.indexedDB) {
+            console.warn('IndexedDB not available, image storage disabled');
+            return;
+        }
+
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
 
@@ -173,23 +178,26 @@ class ImageStorage {
 
     async getStorageStats() {
         await this.ensureReady();
-        
+
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const objectStore = transaction.objectStore(this.storeName);
-            
-            const request = objectStore.getAll();
-            
-            request.onsuccess = () => {
-                const records = request.result;
-                const stats = {
-                    totalImages: records.length,
-                    totalSizeBytes: 0,
-                    exams: {}
-                };
-                
-                records.forEach(record => {
-                    stats.totalSizeBytes += record.size;
+
+            const stats = {
+                totalImages: 0,
+                totalSizeBytes: 0,
+                exams: {}
+            };
+
+            const request = objectStore.openCursor();
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const record = cursor.value;
+                    stats.totalImages++;
+                    stats.totalSizeBytes += record.size || 0;
+
                     if (!stats.exams[record.examId]) {
                         stats.exams[record.examId] = {
                             count: 0,
@@ -197,17 +205,19 @@ class ImageStorage {
                         };
                     }
                     stats.exams[record.examId].count++;
-                    stats.exams[record.examId].sizeBytes += record.size;
-                });
-                
-                stats.totalSizeMB = (stats.totalSizeBytes / (1024 * 1024)).toFixed(2);
-                Object.keys(stats.exams).forEach(examId => {
-                    stats.exams[examId].sizeMB = (stats.exams[examId].sizeBytes / (1024 * 1024)).toFixed(2);
-                });
-                
-                resolve(stats);
+                    stats.exams[record.examId].sizeBytes += record.size || 0;
+
+                    cursor.continue();
+                } else {
+                    stats.totalSizeMB = (stats.totalSizeBytes / (1024 * 1024)).toFixed(2);
+                    Object.keys(stats.exams).forEach(examId => {
+                        stats.exams[examId].sizeMB = (stats.exams[examId].sizeBytes / (1024 * 1024)).toFixed(2);
+                    });
+
+                    resolve(stats);
+                }
             };
-            
+
             request.onerror = () => {
                 reject(request.error);
             };
@@ -236,4 +246,6 @@ class ImageStorage {
 }
 
 // Create global instance
-window.imageStorage = new ImageStorage();
+window.ExamApp = window.ExamApp || {};
+window.ExamApp.imageStorage = new ImageStorage();
+window.imageStorage = window.ExamApp.imageStorage; // backwards compat
