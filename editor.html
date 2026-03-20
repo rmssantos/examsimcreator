@@ -7,21 +7,25 @@
   <meta name="description" content="Exam Simulator - Create and edit exam questions with the built-in editor">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📝</text></svg>">
   <title>Question Editor - Create & Edit Exams</title>
-  <link rel="stylesheet" href="style-new.css">
-  <link rel="stylesheet" href="multi-exam-styles.css">
-  <link rel="stylesheet" href="modern-enhancements.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="editor-styles.css">
 </head>
 <body>
   <div class="editor-container">
-    <h1><i aria-hidden="true" class="fas fa-tools"></i> Question Editor</h1>
-    <p class="muted">Create and edit questions for any exam. Supports multiple choice, drag & drop, sequences, and more. Changes save to your browser and apply instantly.</p>
+    <div class="editor-header">
+      <h1><i aria-hidden="true" class="fas fa-pen-ruler"></i> Question Editor</h1>
+      <div class="editor-header-actions">
+        <a href="index.html" class="btn btn-outline"><i aria-hidden="true" class="fas fa-arrow-left"></i> Back</a>
+        <button class="editor-theme-toggle" id="editorThemeToggle" title="Toggle theme" aria-label="Toggle theme">
+          <i aria-hidden="true" class="fas fa-moon" id="editorThemeIcon"></i>
+        </button>
+      </div>
+    </div>
 
     <!-- Exam Selection Bar -->
     <div class="exam-selection-bar">
       <div class="exam-select-group">
-        <label><i aria-hidden="true" class="fas fa-book"></i> Select Exam</label>
+        <label><i aria-hidden="true" class="fas fa-book"></i> Exam</label>
         <select id="examSelect">
           <option value="">Loading exams...</option>
         </select>
@@ -29,11 +33,10 @@
 
       <div class="exam-actions-group">
         <div class="custom-exam-input">
-          <input id="customExamCode" type="text" placeholder="Custom exam code (e.g., myexam)"/>
-          <button id="loadCustomExam" class="btn btn-secondary" title="Load custom exam from ./exam-dumps/" aria-label="Load custom exam"><i aria-hidden="true" class="fas fa-folder-open"></i> Load</button>
-          <button id="newExamBtn" class="btn btn-secondary" title="Create a new custom exam" aria-label="Create new exam"><i aria-hidden="true" class="fas fa-plus-circle"></i> New Exam</button>
+          <input id="customExamCode" type="text" placeholder="Exam code (e.g., myexam)"/>
+          <button id="loadCustomExam" class="btn btn-secondary" title="Load custom exam" aria-label="Load custom exam"><i aria-hidden="true" class="fas fa-folder-open"></i> Load</button>
+          <button id="newExamBtn" class="btn btn-secondary" title="Create a new custom exam" aria-label="Create new exam"><i aria-hidden="true" class="fas fa-plus-circle"></i> New</button>
         </div>
-        <a href="index.html" class="btn btn-outline"><i aria-hidden="true" class="fas fa-arrow-left"></i> Back to App</a>
       </div>
     </div>
 
@@ -44,8 +47,8 @@
           <h3><i aria-hidden="true" class="fas fa-list"></i> Questions</h3>
           <input id="searchInput" type="text" placeholder="Search questions..."/>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
-            <select id="filterType" aria-label="Filter by question type" style="padding: 8px; border-radius: 6px; border: 2px solid rgba(30, 60, 114, 0.15); font-size: 13px;">
+          <div class="sidebar-filters">
+            <select id="filterType" aria-label="Filter by question type">
               <option value="">All Types</option>
               <option value="STANDARD">Single Choice</option>
               <option value="MULTI">Multiple Choice</option>
@@ -53,12 +56,12 @@
               <option value="DRAG_DROP_SELECT">Drag & Drop</option>
               <option value="YES_NO_MATRIX">Yes/No Matrix</option>
             </select>
-            <select id="filterCategory" aria-label="Filter by category" style="padding: 8px; border-radius: 6px; border: 2px solid rgba(30, 60, 114, 0.15); font-size: 13px;">
+            <select id="filterCategory" aria-label="Filter by category">
               <option value="">All Categories</option>
             </select>
           </div>
 
-          <button id="addNew" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+          <button id="addNew" class="btn primary" style="width: 100%; margin-top: 8px;">
             <i aria-hidden="true" class="fas fa-plus"></i> New Question
           </button>
         </div>
@@ -82,31 +85,39 @@
       </div>
       <div class="right-pane">
       <div class="form">
-        <div class="row">
-          <label for="qId"><i aria-hidden="true" class="fas fa-hashtag"></i> ID</label>
-          <input id="qId" type="number" placeholder="Auto-generated (optional)"/>
+        <div class="form-header">
+          <span class="form-header-title" id="formTitle">Edit Question</span>
+          <span class="form-header-status"><i aria-hidden="true" class="fas fa-check-circle"></i> Saved</span>
         </div>
-        <div class="row">
-          <label for="qModule"><i aria-hidden="true" class="fas fa-folder"></i> Category</label>
-          <input id="qModule" type="text" placeholder="e.g., Math, Science, History (optional)" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;"/>
+
+        <div class="form-meta-row">
+          <div class="row">
+            <label for="qType"><i aria-hidden="true" class="fas fa-list"></i> Type</label>
+            <select id="qType">
+              <option value="STANDARD">Single Choice</option>
+              <option value="MULTI">Multiple Choice</option>
+              <option value="SEQUENCE">Sequence</option>
+              <option value="DRAG_DROP_SELECT">Drag & Drop</option>
+              <option value="YES_NO_MATRIX">Yes/No Matrix</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="qModule"><i aria-hidden="true" class="fas fa-folder"></i> Module</label>
+            <input id="qModule" type="text" placeholder="e.g., Security Concepts"/>
+          </div>
+          <div class="row">
+            <label for="qId"><i aria-hidden="true" class="fas fa-hashtag"></i> ID</label>
+            <input id="qId" type="number" placeholder="Auto"/>
+          </div>
         </div>
+
         <div class="row">
-          <label for="qType"><i aria-hidden="true" class="fas fa-question-circle"></i> Question Type</label>
-          <select id="qType">
-            <option value="STANDARD">Single Choice (one correct answer)</option>
-            <option value="MULTI">Multiple Choice (select all that apply)</option>
-            <option value="SEQUENCE">Sequence (put in correct order)</option>
-            <option value="DRAG_DROP_SELECT">Drag & Drop (select N items)</option>
-            <option value="YES_NO_MATRIX">Yes/No Matrix (statements)</option>
-          </select>
-        </div>
-        <div class="row">
-          <label for="qText"><i aria-hidden="true" class="fas fa-pen"></i> Question Text</label>
-          <textarea id="qText" placeholder="Type your question here..." style="min-height: 100px;"></textarea>
+          <label for="qText"><i aria-hidden="true" class="fas fa-pen"></i> Question</label>
+          <textarea id="qText" placeholder="Type your question here..."></textarea>
         </div>
         <div class="row">
           <label for="qExplanation"><i aria-hidden="true" class="fas fa-lightbulb"></i> Explanation</label>
-          <textarea id="qExplanation" placeholder="Explain the correct answer (shown after answering)..." style="min-height: 80px;"></textarea>
+          <textarea id="qExplanation" placeholder="Explain the correct answer..."></textarea>
         </div>
 
         <div class="section-title">Images</div>
@@ -130,22 +141,22 @@
         </div>
 
         <div class="section-title"><i aria-hidden="true" class="fas fa-list"></i> Answer Options</div>
-        <div id="sequenceHint" style="display:none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.9rem;">
-          <strong><i aria-hidden="true" class="fas fa-info-circle"></i> SEQUENCE Type:</strong> Use the <strong>Preview panel</strong> below to set the correct order. Click the Up/Down arrows to arrange options in the correct sequence. The order you set there is what students must match.
+        <div id="sequenceHint" style="display:none;">
+          <strong><i aria-hidden="true" class="fas fa-info-circle"></i> Sequence:</strong> Use the Preview panel below to set the correct order with the Up/Down arrows.
         </div>
         <div id="options" class="options"></div>
         <div class="footer">
           <button id="addOption" class="btn primary"><i aria-hidden="true" class="fas fa-plus"></i> Add Option</button>
           <span id="optionsHelp" class="small" style="color: #6c757d;">Check the boxes next to correct answers</span>
         </div>
-        <div class="row" style="display: none;"><label>Correct</label><input id="qCorrect" type="text" placeholder="Auto-managed by checkboxes"/></div>
-        <div class="row" id="ddSelectRow" style="display:none;"><label>Select N</label><input id="qDragSelectN" type="number" min="1" placeholder="Required selection count"/></div>
-        <div class="row" id="ynMatrixRow" style="display:none;"><label>Statements</label><textarea id="qStatements" placeholder="One statement per line (Yes/No options auto)"></textarea></div>
+        <div class="row" style="display: none;"><label>Correct</label><input id="qCorrect" type="text" placeholder="Auto-managed"/></div>
+        <div class="row" id="ddSelectRow" style="display:none;"><label>Select N</label><input id="qDragSelectN" type="number" min="1" placeholder="Count"/></div>
+        <div class="row" id="ynMatrixRow" style="display:none;"><label>Statements</label><textarea id="qStatements" placeholder="One per line"></textarea></div>
 
-        <div class="footer" style="gap: 10px; border-top: 2px solid #e1e1e1; padding-top: 15px; margin-top: 20px;">
-          <button id="save" class="btn primary" style="font-size: 1rem; padding: 10px 20px;"><i aria-hidden="true" class="fas fa-save"></i> Save Changes</button>
-          <button id="deleteCurrent" class="btn danger"><i aria-hidden="true" class="fas fa-trash"></i> Delete Question</button>
-          <span class="small" style="color: #28a745; margin-left: auto;">✓ Auto-saved to browser</span>
+        <div class="form-footer">
+          <button id="save" class="btn primary"><i aria-hidden="true" class="fas fa-save"></i> Save Changes</button>
+          <button id="deleteCurrent" class="btn danger"><i aria-hidden="true" class="fas fa-trash"></i> Delete</button>
+          <span class="small" style="margin-left: auto;" id="saveStatus">✓ Saved</span>
         </div>
       </div>
       <div class="preview" id="preview">
@@ -221,8 +232,32 @@
       }
     }
 
+    // Theme toggle for editor
+    function initEditorTheme() {
+      const toggle = document.getElementById('editorThemeToggle');
+      const icon = document.getElementById('editorThemeIcon');
+      const saved = localStorage.getItem('theme');
+
+      if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-mode');
+        if (icon) icon.className = 'fas fa-sun';
+      }
+
+      if (toggle) {
+        toggle.addEventListener('click', () => {
+          document.body.classList.toggle('dark-mode');
+          const isDark = document.body.classList.contains('dark-mode');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        });
+      }
+    }
+
     // Initialize when page loads
-    document.addEventListener('DOMContentLoaded', initializeEditorExamList);
+    document.addEventListener('DOMContentLoaded', () => {
+      initEditorTheme();
+      initializeEditorExamList();
+    });
   </script>
   <script src="editor.js"></script>
 </body>
